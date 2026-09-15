@@ -1,0 +1,6 @@
+name = "cloudflare-notify"
+main = "src/index.js"
+compatibility_date = "2023-01-01"
+
+# You can configure environments and variables here or in the cloudflare dashboard.
+# DO NOT add secrets here. Use wrangler secret put <NAME> or the Cloudflare dashboard.
