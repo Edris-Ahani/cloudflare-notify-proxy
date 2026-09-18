@@ -1,5 +1,6 @@
 import { verifyApiKey, unauthorizedResponse } from "./auth.js";
 import { sendTelegramMessage } from "./providers/telegram.js";
+import { triggerCoolifyDeploy } from "./providers/coolify.js";
 
 function jsonResponse(obj, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(obj), {
@@ -35,15 +36,23 @@ export default {
       return jsonResponse({ ok: true, service: "cloudflare-notify" }, 200, corsHeaders());
     }
 
-    // Endpoint: POST /send/:provider
-    if (request.method === "POST" && path.startsWith("/send/")) {
+    // Endpoint: POST or GET /send/:provider
+    if ((request.method === "POST" || request.method === "GET") && path.startsWith("/send/")) {
       // 1. Verify Authentication
       if (!verifyApiKey(request, env)) {
         return unauthorizedResponse();
       }
 
-      const provider = path.replace("/send/", "").toLowerCase();
-      const payload = await request.json().catch(() => ({}));
+      // Split the path to extract provider and optional sub-identifier
+      // e.g. "/send/coolify/api" -> ["coolify", "api"]
+      const pathParts = path.replace("/send/", "").toLowerCase().split("/");
+      const provider = pathParts[0];
+      const subId = pathParts[1] || "";
+
+      let payload = {};
+      if (request.method === "POST") {
+        payload = await request.json().catch(() => ({}));
+      }
 
       // 2. Route to appropriate provider
       if (provider === "telegram") {
@@ -55,6 +64,11 @@ export default {
         return jsonResponse(result.body, result.status, corsHeaders());
       }
       
+      if (provider === "coolify") {
+        const result = await triggerCoolifyDeploy(env, subId);
+        return jsonResponse(result.body, result.status, corsHeaders());
+      }
+
       // Future providers (e.g., discord, slack) can be added here
       // else if (provider === 'discord') { ... }
 

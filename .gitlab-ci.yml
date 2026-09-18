@@ -1,0 +1,17 @@
+stages:
+  - deploy
+
+deploy_to_coolify:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - echo "Triggering deployment via Cloudflare Worker Proxy..."
+    - >
+      curl --request GET "$WORKER_WEBHOOK_URL"
+      --header "Authorization: Bearer $PROXY_API_SECRET_KEY"
+      --header "Accept: application/json"
+    - echo "Deployment request sent successfully!"
+  only:
+    - development
