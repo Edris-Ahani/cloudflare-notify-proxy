@@ -16,9 +16,9 @@ export function verifyApiKey(request, env) {
   return token === expectedKey;
 }
 
-export function unauthorizedResponse() {
+export function unauthorizedResponse(extraHeaders = {}) {
   return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
     status: 401,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...extraHeaders },
   });
 }

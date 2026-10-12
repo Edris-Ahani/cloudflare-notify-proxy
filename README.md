@@ -4,12 +4,25 @@ A complete, secure, and blazing-fast proxy service for sending notifications and
 
 This service acts as an intermediary. It allows you to securely publish messages using only a custom API Key, ensuring that your sensitive bot tokens are never exposed in your application's source code or on unsecured servers.
 
+It can also act as a **Google OAuth intermediary**: your app asks the Worker to start sign-in / sign-up, the Worker talks to Google, and then tells your app whether the user is allowed to log in (by returning a JWT).
+
 ## Features
 
 - 🚀 **Blazing Fast**: Runs on Cloudflare's Edge Network for instant delivery worldwide.
 - 🔒 **Secure**: Authenticated via a strong, randomly generated API Key (Bearer Token).
+- 👤 **Google Auth Proxy**: Worker acts as an OAuth intermediary for Google sign-in / sign-up and returns a JWT to your app.
 - 🔌 **Extensible**: Designed to easily support other platforms (Discord, Slack, etc.) in the future.
 - 📱 **Flexible Formatting**: Supports both simple text messages and structured, formatted crash reports.
+
+---
+
+## Table of Contents
+
+1. [Step-by-Step Guide (Base Setup)](#step-by-step-guide)
+2. [Google Auth Setup (Step-by-Step)](#google-auth-setup-step-by-step)
+3. [Environment Variables Reference](#environment-variables-reference)
+4. [API Usage (Telegram / Coolify)](#api-usage)
+5. [Google Auth API Usage](#google-auth-api-usage)
 
 ---
 
@@ -20,6 +33,8 @@ This guide will walk you through every step required to get this project up and 
 ### Step 1: Create a Telegram Bot and Get Your Chat ID
 
 Before deploying the code, you need a Telegram bot that will actually send the messages.
+
+> If you only want Google Auth and do **not** need Telegram yet, you can skip this step and leave the Telegram variables empty for now.
 
 1. **Create the Bot**:
    - Open Telegram and search for **[@BotFather](https://t.me/botfather)**.
@@ -42,68 +57,316 @@ Now, let's prepare the code on your computer.
    npm install
    ```
 
-2. **Generate a Secure API Key**:
-   You need a strong, random API Key to secure your worker. We have a built-in script for this:
+2. **Generate Secure Secrets**:
+   You need strong random values for `API_SECRET_KEY` and (if you use Google Auth) `JWT_SECRET`.
+   Run the built-in script once per secret:
    ```bash
    npm run generate-key
    ```
-   *Copy the 64-character output provided by this script. You will need it in the next steps.*
+   *Copy the 64-character output. Run it again if you need a second key for `JWT_SECRET`.*
 
-3. **Configure Local Environment Variables**:
-   Create a local configuration file so you can test the worker on your own system without affecting production:
+3. **Create Your Local Env File**:
+   Cloudflare Wrangler reads local secrets from `.dev.vars` (this file is git-ignored).
    ```bash
    cp .env.example .dev.vars
    ```
-   Open the `.dev.vars` file in your code editor and fill in the values:
-   - `API_SECRET_KEY`: Paste the key you generated in the previous step.
-   - `TELEGRAM_BOT_TOKEN`: Paste the token you got from BotFather.
-   - `TELEGRAM_DEFAULT_CHAT_ID`: Paste your Chat ID.
+
+4. **Fill `.dev.vars` Values**:
+   Open `.dev.vars` in your editor and replace the placeholders.
+
+   **Required for notification API (`/send/...`):**
+   - `API_SECRET_KEY` → paste the key from `npm run generate-key`
+   - `TELEGRAM_BOT_TOKEN` → paste the token from BotFather
+   - `TELEGRAM_DEFAULT_CHAT_ID` → paste your Chat ID
+
+   **Optional (Coolify deploy triggers):**
+   - `COOLIFY_WEBHOOK`
+   - `COOLIFY_TOKEN`
+   - Or project-specific pairs like `COOLIFY_WEBHOOK_URL_FRONTEND` / `COOLIFY_TOKEN_FRONTEND`
+
+   **Required for Google Auth (`/auth/google/...`):**
+   - Fill these after you complete the [Google Auth Setup](#google-auth-setup-step-by-step) section below:
+     - `GOOGLE_CLIENT_ID`
+     - `GOOGLE_CLIENT_SECRET`
+     - `GOOGLE_REDIRECT_URI`
+     - `JWT_SECRET`
+     - `ALLOWED_RETURN_ORIGINS`
+
+   Example (local Google Auth):
+   ```env
+   GOOGLE_CLIENT_ID=123456789-abcdef.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
+   GOOGLE_REDIRECT_URI=http://127.0.0.1:8787/auth/google/callback
+   JWT_SECRET=paste_another_generate-key_output_here
+   ALLOWED_RETURN_ORIGINS=http://localhost:3000
+   ```
 
 ### Step 3: Test Locally (Optional)
 
-Before putting it on the internet, you can test it on your computer.
+Before putting it on the internet, you can test the worker on your computer.
 ```bash
 npm run dev
 ```
-The worker will start locally on port `8787` (e.g., `http://127.0.0.1:8787`). You can use the cURL commands in the **API Usage** section below to test it.
+The worker will start locally on port `8787` (e.g., `http://127.0.0.1:8787`).
+
+- Health check: open `http://127.0.0.1:8787/`
+- Telegram/Coolify: use the cURL examples in [API Usage](#api-usage)
+- Google Auth: use the examples in [Google Auth API Usage](#google-auth-api-usage)
+
+> **Note:** Google Auth also needs an `AUTH_KV` binding in `wrangler.toml`. Complete [Google Auth Setup → Step G2](#g2-create-the-cloudflare-kv-namespace) before testing Google login locally.
 
 ---
 
 ### Step 4: Connect to Cloudflare and Deploy
 
-Once you are ready, it's time to put your worker on the Cloudflare Edge network.
+Once you are ready, put the worker on the Cloudflare Edge network.
 
 1. **Login to Cloudflare**:
-   Run the following command. It will open a tab in your web browser asking you to authorize Wrangler (the Cloudflare CLI) to access your Cloudflare account. Click "Allow".
    ```bash
    npx wrangler login
    ```
+   A browser tab will open. Click **Allow**.
 
-2. **Send Environment Variables (Secrets) to Cloudflare**:
-   For security reasons, Cloudflare does not upload your local `.dev.vars` file. Instead, you must inject your secret variables directly into Cloudflare's encrypted vault. Run these three commands one by one. After running each command, the terminal will prompt you to type or paste the value.
-   
+2. **Create KV (only if you use Google Auth)**:
+   Follow [G2](#g2-create-the-cloudflare-kv-namespace) and put the IDs into `wrangler.toml` **before** deploying.
+
+3. **Send Secret Variables to Cloudflare**:
+   Cloudflare does **not** upload `.dev.vars`. You must set secrets explicitly.
+
+   **Always (notification API):**
    ```bash
    npx wrangler secret put API_SECRET_KEY
-   ```
-   *(Paste your generated API key and press Enter)*
-
-   ```bash
    npx wrangler secret put TELEGRAM_BOT_TOKEN
-   ```
-   *(Paste your Telegram Bot Token and press Enter)*
-
-   ```bash
    npx wrangler secret put TELEGRAM_DEFAULT_CHAT_ID
    ```
-   *(Paste your Chat ID and press Enter)*
 
-3. **Deploy the Worker**:
-   Now that Cloudflare has your secrets, push your code:
+   **If you use Coolify:**
+   ```bash
+   npx wrangler secret put COOLIFY_WEBHOOK
+   npx wrangler secret put COOLIFY_TOKEN
+   ```
+
+   **If you use Google Auth:**
+   ```bash
+   npx wrangler secret put GOOGLE_CLIENT_ID
+   npx wrangler secret put GOOGLE_CLIENT_SECRET
+   npx wrangler secret put JWT_SECRET
+   ```
+
+   After each command, paste the value and press Enter.
+
+4. **Set Non-Secret Google Variables (Dashboard or Wrangler)**:
+   These are not as sensitive as secrets, but they are still required for Google Auth.
+
+   Option A — Cloudflare Dashboard:
+   1. Open [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages**
+   2. Click your worker (`cloudflare-notify`)
+   3. Go to **Settings** → **Variables and Secrets**
+   4. Add these **Plaintext** variables:
+      - `GOOGLE_REDIRECT_URI` = `https://cloudflare-notify.<YOUR_USERNAME>.workers.dev/auth/google/callback`
+      - `ALLOWED_RETURN_ORIGINS` = `https://myapp.example.com` (comma-separated if you have more than one)
+
+   Option B — `wrangler.toml` `[vars]` block:
+   ```toml
+   [vars]
+   GOOGLE_REDIRECT_URI = "https://cloudflare-notify.<YOUR_USERNAME>.workers.dev/auth/google/callback"
+   ALLOWED_RETURN_ORIGINS = "https://myapp.example.com,http://localhost:3000"
+   ```
+
+5. **Deploy the Worker**:
    ```bash
    npm run deploy
    ```
 
-Your service is now live! 🎉 Cloudflare will provide you with a URL that looks like `https://cloudflare-notify.<YOUR_USERNAME>.workers.dev`.
+Your service is now live! 🎉 Cloudflare will provide a URL like `https://cloudflare-notify.<YOUR_USERNAME>.workers.dev`.
+
+6. **Update Google Console Redirect URI for Production**:
+   After deploy, go back to Google Cloud Console and make sure the **production** callback URI is listed (see [G1](#g1-create-google-oauth-credentials)).
+
+---
+
+## Google Auth Setup (Step-by-Step)
+
+Use this section if you want the Worker to be a Google sign-in / sign-up intermediary.
+
+### What this does
+
+1. Your app opens: `GET /auth/google/start?return_to=<YOUR_APP_CALLBACK_URL>`
+2. Worker redirects the user to Google
+3. Google redirects to Worker: `GET /auth/google/callback`
+4. Worker verifies the user, stores/updates the profile in KV, then redirects to your `return_to` URL with:
+   - `token` — Worker-signed JWT (your app uses this as the login session)
+   - `is_new_user` — `true` on first login (sign-up), `false` on later logins (sign-in)
+   - `provider=google`
+5. Your app stores the JWT and can call `GET /auth/me` later to validate it
+
+### G1: Create Google OAuth Credentials
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a project (or select an existing one).
+3. Go to **APIs & Services** → **OAuth consent screen**:
+   - Choose **External** (unless you only use Google Workspace internal users)
+   - Fill App name, User support email, Developer contact
+   - Save and continue through the screens (Scopes can stay default for now: `openid`, `email`, `profile` are requested by the Worker)
+   - Add test users if the app is still in **Testing** mode
+4. Go to **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID**
+5. Application type: **Web application**
+6. Name it, for example: `cloudflare-notify-auth`
+7. Under **Authorized redirect URIs**, click **Add URI** and add **exactly**:
+   - Local testing: `http://127.0.0.1:8787/auth/google/callback`
+   - Production: `https://cloudflare-notify.<YOUR_USERNAME>.workers.dev/auth/google/callback`
+8. Click **Create**
+9. Copy:
+   - **Client ID** → this becomes `GOOGLE_CLIENT_ID`
+   - **Client Secret** → this becomes `GOOGLE_CLIENT_SECRET`
+
+> Important: `GOOGLE_REDIRECT_URI` in your env must match one of the Authorized redirect URIs **character-for-character** (including `http` vs `https`, trailing slash, and host).
+
+### G2: Create the Cloudflare KV Namespace
+
+Google Auth stores temporary OAuth `state` and user profiles in KV.
+
+1. Make sure you are logged in (`npx wrangler login`).
+2. Create production and preview namespaces:
+   ```bash
+   npx wrangler kv namespace create AUTH_KV
+   npx wrangler kv namespace create AUTH_KV --preview
+   ```
+3. Each command prints an ID. Open `wrangler.toml` and replace the placeholders:
+   ```toml
+   [[kv_namespaces]]
+   binding = "AUTH_KV"
+   id = "PASTE_PRODUCTION_ID_HERE"
+   preview_id = "PASTE_PREVIEW_ID_HERE"
+   ```
+4. Save the file.
+
+### G3: Fill Local Google Variables in `.dev.vars`
+
+Open `.dev.vars` and set:
+
+| Variable | What to put |
+|---|---|
+| `GOOGLE_CLIENT_ID` | Client ID from Google Console |
+| `GOOGLE_CLIENT_SECRET` | Client Secret from Google Console |
+| `GOOGLE_REDIRECT_URI` | Local callback, usually `http://127.0.0.1:8787/auth/google/callback` |
+| `JWT_SECRET` | Output of another `npm run generate-key` run |
+| `ALLOWED_RETURN_ORIGINS` | Origins of your app that may receive the login result, comma-separated |
+
+**How to choose `ALLOWED_RETURN_ORIGINS`:**
+- If your app runs at `http://localhost:3000/auth/callback`, origin is `http://localhost:3000`
+- If your app runs at `https://myapp.example.com/login/callback`, origin is `https://myapp.example.com`
+- Multiple apps/environments:
+  ```env
+  ALLOWED_RETURN_ORIGINS=http://localhost:3000,https://myapp.example.com
+  ```
+
+**Example filled block:**
+```env
+GOOGLE_CLIENT_ID=123456789-abcdef.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
+GOOGLE_REDIRECT_URI=http://127.0.0.1:8787/auth/google/callback
+JWT_SECRET=64_char_random_string_from_generate-key
+ALLOWED_RETURN_ORIGINS=http://localhost:3000
+```
+
+### G4: Test Google Auth Locally
+
+1. Start the worker:
+   ```bash
+   npm run dev
+   ```
+2. In your browser, open (replace the `return_to` with your real app callback URL):
+   ```text
+   http://127.0.0.1:8787/auth/google/start?return_to=http://localhost:3000/auth/callback
+   ```
+3. Choose a Google account and approve access.
+4. You should land on your app callback with query params like:
+   ```text
+   http://localhost:3000/auth/callback?token=eyJ...&is_new_user=true&provider=google
+   ```
+5. Optional: validate the token:
+   ```bash
+   curl http://127.0.0.1:8787/auth/me \
+     -H "Authorization: Bearer PASTE_TOKEN_HERE"
+   ```
+
+### G5: Configure Google Auth for Production
+
+1. Deploy (or redeploy) after KV IDs are in `wrangler.toml`:
+   ```bash
+   npm run deploy
+   ```
+2. Set secrets:
+   ```bash
+   npx wrangler secret put GOOGLE_CLIENT_ID
+   npx wrangler secret put GOOGLE_CLIENT_SECRET
+   npx wrangler secret put JWT_SECRET
+   ```
+3. Set plaintext variables (Dashboard → Worker → Settings → Variables, or `[vars]` in `wrangler.toml`):
+   - `GOOGLE_REDIRECT_URI` = `https://cloudflare-notify.<YOUR_USERNAME>.workers.dev/auth/google/callback`
+   - `ALLOWED_RETURN_ORIGINS` = your production app origin(s)
+4. In Google Cloud Console, ensure the **production** redirect URI is added under Authorized redirect URIs.
+5. Test with:
+   ```text
+   https://cloudflare-notify.<YOUR_USERNAME>.workers.dev/auth/google/start?return_to=https://myapp.example.com/auth/callback
+   ```
+
+### G6: What Your App Must Do
+
+1. Send the user to Worker `/auth/google/start` with a `return_to` URL that belongs to an allowed origin.
+2. On the callback page, read:
+   - `token` → save it (localStorage, cookie, secure storage, etc.)
+   - `is_new_user` → `true` means first-time sign-up, `false` means sign-in
+   - `error` → if present, show a login failure message
+3. For authenticated API calls to your own backend, send the JWT, or call Worker `/auth/me` to verify it.
+
+---
+
+## Environment Variables Reference
+
+Use this checklist when filling `.dev.vars` (local) or Cloudflare secrets/vars (production).
+
+### Core / Notifications
+
+| Name | Required? | Where to set | Description |
+|---|---|---|---|
+| `API_SECRET_KEY` | Yes (for `/send/...`) | `.dev.vars` + `wrangler secret put` | Bearer token your clients send to call `/send/...` |
+| `TELEGRAM_BOT_TOKEN` | Yes (for Telegram) | `.dev.vars` + secret | Bot token from `@BotFather` |
+| `TELEGRAM_DEFAULT_CHAT_ID` | Yes (for Telegram) | `.dev.vars` + secret | Default destination chat/group/channel ID |
+| `COOLIFY_WEBHOOK` | Optional | `.dev.vars` + secret | Default Coolify deploy webhook |
+| `COOLIFY_TOKEN` | Optional | `.dev.vars` + secret | Default Coolify API/token value |
+
+### Google Auth
+
+| Name | Required? | Where to set | Description |
+|---|---|---|---|
+| `GOOGLE_CLIENT_ID` | Yes (for Google Auth) | `.dev.vars` + secret | OAuth Client ID from Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Yes (for Google Auth) | `.dev.vars` + secret | OAuth Client Secret from Google Cloud Console |
+| `GOOGLE_REDIRECT_URI` | Yes (for Google Auth) | `.dev.vars` + plaintext var | Must equal Worker callback URL registered in Google |
+| `JWT_SECRET` | Yes (for Google Auth) | `.dev.vars` + secret | Secret used to sign/verify JWTs returned to your app |
+| `ALLOWED_RETURN_ORIGINS` | Yes (for Google Auth) | `.dev.vars` + plaintext var | Comma-separated allowed origins for `return_to` |
+| `AUTH_KV` | Yes (for Google Auth) | `wrangler.toml` KV binding | Not an env string; created via `wrangler kv namespace create` |
+
+### Quick copy checklist for `.dev.vars`
+
+```env
+# Notifications
+API_SECRET_KEY=
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_DEFAULT_CHAT_ID=
+
+# Optional Coolify
+# COOLIFY_WEBHOOK=
+# COOLIFY_TOKEN=
+
+# Google Auth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://127.0.0.1:8787/auth/google/callback
+JWT_SECRET=
+ALLOWED_RETURN_ORIGINS=http://localhost:3000
+```
 
 ---
 
@@ -155,4 +418,70 @@ curl -X POST https://cloudflare-notify.<YOUR_USERNAME>.workers.dev/send/telegram
     "chat_id": "-100987654321",
     "text": "This message goes to a different group!"
   }'
+```
+
+---
+
+## Google Auth API Usage
+
+### Start sign-in / sign-up
+
+Open this URL from your app (browser redirect or button link):
+
+```text
+https://cloudflare-notify.<YOUR_USERNAME>.workers.dev/auth/google/start?return_to=https://myapp.example.com/auth/callback
+```
+
+Local:
+
+```text
+http://127.0.0.1:8787/auth/google/start?return_to=http://localhost:3000/auth/callback
+```
+
+### Success redirect back to your app
+
+```text
+https://myapp.example.com/auth/callback?token=eyJ...&is_new_user=false&provider=google
+```
+
+| Query param | Meaning |
+|---|---|
+| `token` | JWT issued by the Worker. Treat this as the logged-in session token. |
+| `is_new_user` | `true` = first login (sign-up), `false` = returning user (sign-in) |
+| `provider` | Always `google` for this flow |
+
+### Failure redirect back to your app
+
+```text
+https://myapp.example.com/auth/callback?error=access_denied&provider=google
+```
+
+Common `error` values:
+- `access_denied` — user cancelled Google consent
+- `email_not_verified` — Google account email is not verified
+- `token_exchange_failed` — Worker could not exchange the auth code
+- `userinfo_failed` — Worker could not read the Google profile
+- `missing_code` — Google did not return an auth code
+- `internal_error` — unexpected Worker error
+
+### Validate the current user
+
+```bash
+curl https://cloudflare-notify.<YOUR_USERNAME>.workers.dev/auth/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Example success response:
+
+```json
+{
+  "ok": true,
+  "user": {
+    "id": "google-user-sub",
+    "email": "user@gmail.com",
+    "name": "Example User",
+    "picture": "https://...",
+    "provider": "google"
+  }
+}
 ```
