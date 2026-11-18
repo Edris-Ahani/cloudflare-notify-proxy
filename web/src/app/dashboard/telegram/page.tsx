@@ -12,7 +12,327 @@ import {
   Bot,
   Radio,
   Sparkles,
+  ShoppingBag,
+  Server,
+  UserCheck,
+  RotateCcw,
+  Copy,
+  Check,
+  FileCode,
 } from "lucide-react";
+
+type PresetKey = "order" | "server" | "user";
+
+interface PresetItem {
+  id: PresetKey;
+  label: string;
+  badge: string;
+  icon: typeof ShoppingBag;
+  templates: {
+    MarkdownV2: string;
+    HTML: string;
+    "": string;
+  };
+}
+
+const PRESET_TEMPLATES: Record<PresetKey, PresetItem> = {
+  order: {
+    id: "order",
+    label: "Order & Payment Object",
+    badge: "E-Commerce",
+    icon: ShoppingBag,
+    templates: {
+      MarkdownV2: `*🚨 NEW ORDER NOTIFICATION 🚨*
+━━━━━━━━━━━━━━━━━━━━━
+📦 *Event:* \`order\\.created\`
+🆔 *Order ID:* \`\\#ORD\\-98421\`
+👤 *Customer:* \`Ali Rezaei\`
+💰 *Total Amount:* \`1,450,000 IRR\`
+💳 *Gateway:* \`ZarinPal\`
+📊 *Status:* *PAID* 🟢
+━━━━━━━━━━━━━━━━━━━━━
+📋 *Object Payload \\(JSON\\):*
+\`\`\`json
+{
+  "event": "order.created",
+  "orderId": "ORD-98421",
+  "customer": {
+    "name": "Ali Rezaei",
+    "phone": "+989123456789",
+    "email": "customer@example.com"
+  },
+  "items": [
+    {
+      "sku": "PROD-101",
+      "name": "Cloudflare Pro Notify",
+      "quantity": 1,
+      "unitPrice": 1450000
+    }
+  ],
+  "payment": {
+    "gateway": "ZarinPal",
+    "trackingCode": "ZP-993821049",
+    "currency": "IRR",
+    "isSuccess": true
+  },
+  "metadata": {
+    "clientIp": "185.190.22.4",
+    "userAgent": "TelegramNotify/2.0"
+  },
+  "timestamp": "2026-11-18T11:45:00Z"
+}
+\`\`\`
+🌐 [Open Order in Management Panel](https://example.com/orders/98421)`,
+
+      HTML: `<b>🚨 NEW ORDER NOTIFICATION 🚨</b>
+━━━━━━━━━━━━━━━━━━━━━
+📦 <b>Event:</b> <code>order.created</code>
+🆔 <b>Order ID:</b> <code>#ORD-98421</code>
+👤 <b>Customer:</b> <code>Ali Rezaei</code>
+💰 <b>Total Amount:</b> <code>1,450,000 IRR</code>
+💳 <b>Gateway:</b> <code>ZarinPal</code>
+📊 <b>Status:</b> <b>PAID</b> 🟢
+━━━━━━━━━━━━━━━━━━━━━
+📋 <b>Object Payload (JSON):</b>
+<pre><code class="language-json">{
+  "event": "order.created",
+  "orderId": "ORD-98421",
+  "customer": {
+    "name": "Ali Rezaei",
+    "phone": "+989123456789",
+    "email": "customer@example.com"
+  },
+  "items": [
+    {
+      "sku": "PROD-101",
+      "name": "Cloudflare Pro Notify",
+      "quantity": 1,
+      "unitPrice": 1450000
+    }
+  ],
+  "payment": {
+    "gateway": "ZarinPal",
+    "trackingCode": "ZP-993821049",
+    "currency": "IRR",
+    "isSuccess": true
+  },
+  "metadata": {
+    "clientIp": "185.190.22.4",
+    "userAgent": "TelegramNotify/2.0"
+  },
+  "timestamp": "2026-11-18T11:45:00Z"
+}</code></pre>
+🌐 <a href="https://example.com/orders/98421">Open Order in Management Panel</a>`,
+
+      "": `🚨 NEW ORDER NOTIFICATION 🚨
+━━━━━━━━━━━━━━━━━━━━━
+Event: order.created
+Order ID: #ORD-98421
+Customer: Ali Rezaei
+Total Amount: 1,450,000 IRR
+Gateway: ZarinPal
+Status: PAID 🟢
+━━━━━━━━━━━━━━━━━━━━━
+Object Payload (JSON):
+{
+  "event": "order.created",
+  "orderId": "ORD-98421",
+  "customer": {
+    "name": "Ali Rezaei",
+    "phone": "+989123456789",
+    "email": "customer@example.com"
+  },
+  "items": [
+    {
+      "sku": "PROD-101",
+      "name": "Cloudflare Pro Notify",
+      "quantity": 1,
+      "unitPrice": 1450000
+    }
+  ],
+  "payment": {
+    "gateway": "ZarinPal",
+    "trackingCode": "ZP-993821049",
+    "currency": "IRR",
+    "isSuccess": true
+  },
+  "metadata": {
+    "clientIp": "185.190.22.4",
+    "userAgent": "TelegramNotify/2.0"
+  },
+  "timestamp": "2026-11-18T11:45:00Z"
+}
+Link: https://example.com/orders/98421`,
+    },
+  },
+
+  server: {
+    id: "server",
+    label: "Server & Incident Alert",
+    badge: "DevOps",
+    icon: Server,
+    templates: {
+      MarkdownV2: `*⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️*
+━━━━━━━━━━━━━━━━━━━━━
+🖥️ *Host:* \`edge\\-worker\\-eu1\`
+📈 *Incident:* *High Memory & Spike Load*
+⚡ *Severity:* *CRITICAL* 🔴
+⏱️ *Uptime:* \`99\\.98%\`
+━━━━━━━━━━━━━━━━━━━━━
+📋 *Telemetry Object \\(JSON\\):*
+\`\`\`json
+{
+  "alertId": "ALT-40491",
+  "service": "api-gateway",
+  "host": "edge-worker-eu1",
+  "region": "eu-central",
+  "metrics": {
+    "cpuUsage": "84.2%",
+    "memoryUsage": "91.8%",
+    "requestRate": "1,420 req/s",
+    "errorRate": "0.4%"
+  },
+  "status": "CRITICAL",
+  "environment": "production",
+  "timestamp": "2026-11-18T11:45:00Z"
+}
+\`\`\`
+🛠️ [Open Grafana Incident Dashboard](https://grafana.example.com/alerts/40491)`,
+
+      HTML: `<b>⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️</b>
+━━━━━━━━━━━━━━━━━━━━━
+🖥️ <b>Host:</b> <code>edge-worker-eu1</code>
+📈 <b>Incident:</b> <b>High Memory & Spike Load</b>
+⚡ <b>Severity:</b> <b>CRITICAL</b> 🔴
+⏱️ <b>Uptime:</b> <code>99.98%</code>
+━━━━━━━━━━━━━━━━━━━━━
+📋 <b>Telemetry Object (JSON):</b>
+<pre><code class="language-json">{
+  "alertId": "ALT-40491",
+  "service": "api-gateway",
+  "host": "edge-worker-eu1",
+  "region": "eu-central",
+  "metrics": {
+    "cpuUsage": "84.2%",
+    "memoryUsage": "91.8%",
+    "requestRate": "1,420 req/s",
+    "errorRate": "0.4%"
+  },
+  "status": "CRITICAL",
+  "environment": "production",
+  "timestamp": "2026-11-18T11:45:00Z"
+}</code></pre>
+🛠️ <a href="https://grafana.example.com/alerts/40491">Open Grafana Incident Dashboard</a>`,
+
+      "": `⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️
+━━━━━━━━━━━━━━━━━━━━━
+Host: edge-worker-eu1
+Incident: High Memory & Spike Load
+Severity: CRITICAL 🔴
+Uptime: 99.98%
+━━━━━━━━━━━━━━━━━━━━━
+Telemetry Object (JSON):
+{
+  "alertId": "ALT-40491",
+  "service": "api-gateway",
+  "host": "edge-worker-eu1",
+  "region": "eu-central",
+  "metrics": {
+    "cpuUsage": "84.2%",
+    "memoryUsage": "91.8%",
+    "requestRate": "1,420 req/s",
+    "errorRate": "0.4%"
+  },
+  "status": "CRITICAL",
+  "environment": "production",
+  "timestamp": "2026-11-18T11:45:00Z"
+}
+Link: https://grafana.example.com/alerts/40491`,
+    },
+  },
+
+  user: {
+    id: "user",
+    label: "User Registration Object",
+    badge: "Auth / Security",
+    icon: UserCheck,
+    templates: {
+      MarkdownV2: `*👤 NEW USER REGISTRATION*
+━━━━━━━━━━━━━━━━━━━━━
+📱 *Phone:* \`\\+989123456789\`
+🌍 *Country:* \`Iran \\(IR\\)\`
+🛡️ *Auth Mode:* \`Argon2id \\+ JWT\`
+✅ *Status:* *ACTIVE* 🟢
+━━━━━━━━━━━━━━━━━━━━━
+📋 *User Object \\(JSON\\):*
+\`\`\`json
+{
+  "event": "user.registered",
+  "userId": "usr_99120485",
+  "phoneNumber": "+989123456789",
+  "role": "MEMBER",
+  "security": {
+    "argon2Hashed": true,
+    "jwtSigned": true,
+    "ipAddress": "5.200.14.88",
+    "device": "Desktop/Chrome"
+  },
+  "status": "ACTIVE",
+  "createdAt": "2026-11-18T11:45:00Z"
+}
+\`\`\`
+👥 [View User Profile in Admin](https://example.com/users/usr_99120485)`,
+
+      HTML: `<b>👤 NEW USER REGISTRATION</b>
+━━━━━━━━━━━━━━━━━━━━━
+📱 <b>Phone:</b> <code>+989123456789</code>
+🌍 <b>Country:</b> <code>Iran (IR)</code>
+🛡️ <b>Auth Mode:</b> <code>Argon2id + JWT</code>
+✅ <b>Status:</b> <b>ACTIVE</b> 🟢
+━━━━━━━━━━━━━━━━━━━━━
+📋 <b>User Object (JSON):</b>
+<pre><code class="language-json">{
+  "event": "user.registered",
+  "userId": "usr_99120485",
+  "phoneNumber": "+989123456789",
+  "role": "MEMBER",
+  "security": {
+    "argon2Hashed": true,
+    "jwtSigned": true,
+    "ipAddress": "5.200.14.88",
+    "device": "Desktop/Chrome"
+  },
+  "status": "ACTIVE",
+  "createdAt": "2026-11-18T11:45:00Z"
+}</code></pre>
+👥 <a href="https://example.com/users/usr_99120485">View User Profile in Admin</a>`,
+
+      "": `👤 NEW USER REGISTRATION
+━━━━━━━━━━━━━━━━━━━━━
+Phone: +989123456789
+Country: Iran (IR)
+Auth Mode: Argon2id + JWT
+Status: ACTIVE 🟢
+━━━━━━━━━━━━━━━━━━━━━
+User Object (JSON):
+{
+  "event": "user.registered",
+  "userId": "usr_99120485",
+  "phoneNumber": "+989123456789",
+  "role": "MEMBER",
+  "security": {
+    "argon2Hashed": true,
+    "jwtSigned": true,
+    "ipAddress": "5.200.14.88",
+    "device": "Desktop/Chrome"
+  },
+  "status": "ACTIVE",
+  "createdAt": "2026-11-18T11:45:00Z"
+}
+Link: https://example.com/users/usr_99120485`,
+    },
+  },
+};
 
 export default function TelegramDashboardPage() {
   const { user, refreshUser } = useAuth();
@@ -34,11 +354,13 @@ export default function TelegramDashboardPage() {
   // Direct Test Dispatcher state
   const [testBotId, setTestBotId] = useState("");
   const [testChatId, setTestChatId] = useState("");
-  const [testText, setTestText] = useState("🔔 Test notification from Cloudflare Notify Dashboard!");
-  const [parseMode, setParseMode] = useState("HTML");
+  const [parseMode, setParseMode] = useState<"HTML" | "MarkdownV2" | "">("HTML");
+  const [activePreset, setActivePreset] = useState<PresetKey>("order");
+  const [testText, setTestText] = useState(PRESET_TEMPLATES.order.templates.HTML);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [testSuccess, setTestSuccess] = useState<string | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const bots = user?.telegramBots || [];
 
@@ -54,6 +376,34 @@ export default function TelegramDashboardPage() {
     }
   }, [bots, selectedBotIdForChannel, testBotId, testChatId]);
 
+  // Handle format change from select dropdown
+  const handleParseModeChange = (newMode: "HTML" | "MarkdownV2" | "") => {
+    setParseMode(newMode);
+    setTestText(PRESET_TEMPLATES[activePreset].templates[newMode]);
+  };
+
+  // Handle preset switch from buttons
+  const handleSelectPreset = (key: PresetKey) => {
+    setActivePreset(key);
+    setTestText(PRESET_TEMPLATES[key].templates[parseMode]);
+  };
+
+  // Reset or reload current template preset
+  const handleResetTemplate = () => {
+    setTestText(PRESET_TEMPLATES[activePreset].templates[parseMode]);
+  };
+
+  // Copy payload text to clipboard
+  const handleCopyText = async () => {
+    try {
+      await navigator.clipboard.writeText(testText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Ignore clipboard write failures
+    }
+  };
+
   const handleAddBot = async (e: React.FormEvent) => {
     e.preventDefault();
     setBotSuccess(null);
@@ -61,8 +411,8 @@ export default function TelegramDashboardPage() {
     setIsAddingBot(true);
 
     try {
-      const res = await api.telegram.addBot({ botToken });
-      setBotSuccess(`Bot @${res.botUsername} added and verified!`);
+      await api.telegram.addBot({ botToken });
+      setBotSuccess("Bot successfully registered and verified!");
       setBotToken("");
       await refreshUser();
     } catch (err: any) {
@@ -81,10 +431,10 @@ export default function TelegramDashboardPage() {
     try {
       await api.telegram.addChannel({
         botId: selectedBotIdForChannel,
-        title: channelTitle,
         chatId: channelChatId,
+        title: channelTitle,
       });
-      setChannelSuccess(`Channel '${channelTitle}' verified and linked!`);
+      setChannelSuccess("Channel/Chat successfully verified and linked!");
       setChannelTitle("");
       setChannelChatId("");
       await refreshUser();
@@ -129,12 +479,12 @@ export default function TelegramDashboardPage() {
         {/* Form 1: Add Bot */}
         <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
               <Bot className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Add Telegram Bot</h2>
-              <p className="text-xs text-slate-400">Token provided by @BotFather</p>
+              <p className="text-xs text-slate-400">Tokens are encrypted at rest with hardware AES-256-GCM</p>
             </div>
           </div>
 
@@ -153,38 +503,38 @@ export default function TelegramDashboardPage() {
           <form onSubmit={handleAddBot} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Telegram Bot Token
+                Bot Token (from @BotFather)
               </label>
               <input
                 type="password"
                 required
                 value={botToken}
                 onChange={(e) => setBotToken(e.target.value)}
-                placeholder="1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ..."
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <button
               type="submit"
               disabled={isAddingBot}
-              className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
             >
               {isAddingBot ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Verify & Register Bot
+              Verify & Add Bot
             </button>
           </form>
         </div>
 
-        {/* Form 2: Link Channel to Bot */}
+        {/* Form 2: Link Channel / Chat */}
         <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
               <Radio className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Link Channel / Chat</h2>
-              <p className="text-xs text-slate-400">Connect channel where the bot is an admin</p>
+              <p className="text-xs text-slate-400">Connect a target channel where alerts will be dispatched</p>
             </div>
           </div>
 
@@ -205,21 +555,17 @@ export default function TelegramDashboardPage() {
               <label className="block text-xs font-medium text-slate-300 mb-1">
                 Select Bot
               </label>
-              {bots.length > 0 ? (
-                <select
-                  value={selectedBotIdForChannel}
-                  onChange={(e) => setSelectedBotIdForChannel(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  {bots.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.botName} (@{b.botUsername})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-xs text-amber-400 py-1">Please register a bot first.</p>
-              )}
+              <select
+                value={selectedBotIdForChannel}
+                onChange={(e) => setSelectedBotIdForChannel(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm"
+              >
+                {bots.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.botName} (@{b.botUsername})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -231,55 +577,47 @@ export default function TelegramDashboardPage() {
                 required
                 value={channelTitle}
                 onChange={(e) => setChannelTitle(e.target.value)}
-                placeholder="e.g. Production Alerts"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="e.g. Production Alerts Channel"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm"
               />
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-medium text-slate-300">
-                  Target Chat ID
-                </label>
-                <span className="text-[11px] text-blue-400 font-medium">
-                  Public: @name | Private: -100...
-                </span>
-              </div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Chat ID or @channelusername
+              </label>
               <input
                 type="text"
                 required
                 value={channelChatId}
                 onChange={(e) => setChannelChatId(e.target.value)}
-                placeholder="e.g. -1001987654321 or @my_channel"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                placeholder="e.g. @my_channel or -1001987654321"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm"
               />
-              
-              {/* Detailed Helper Box for Users */}
-              <div className="mt-3 p-3 rounded-lg bg-slate-950/80 border border-slate-800/80 text-xs text-slate-400 space-y-2">
-                <div className="flex items-center gap-1.5 text-slate-200 font-semibold">
-                  <span>How to find your Chat ID:</span>
-                </div>
-                <div className="space-y-1 pl-1 border-l-2 border-blue-500/40 text-[11px] leading-relaxed">
-                  <p>
-                    <strong className="text-amber-400">Prerequisite:</strong> First add your bot to the channel/group as an <strong>Administrator</strong> with &quot;Post Messages&quot; permission.
-                  </p>
-                  <p>
-                    <strong className="text-slate-200">Option A (Public Channel):</strong> Use the public username with @ (e.g. <code className="text-blue-400">@my_alerts</code>).
-                  </p>
-                  <p>
-                    <strong className="text-slate-200">Option B (Private Channel/Group):</strong> Forward any message from the channel to <code className="text-emerald-400">@RawDataBot</code> or <code className="text-emerald-400">@userinfobot</code> to receive the numeric ID (starts with <code className="text-emerald-400">-100...</code>).
-                  </p>
-                  <p>
-                    <strong className="text-slate-200">Option C (Telegram Web):</strong> Open your channel in <code className="text-slate-300">web.telegram.org</code>. The number in the browser URL (e.g. <code className="text-purple-400">-1001234567890</code>) is your Chat ID.
-                  </p>
-                </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-400 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-slate-300 font-medium">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                How to find your Chat ID:
               </div>
+              <ul className="space-y-1 text-[11px] list-disc list-inside text-slate-400">
+                <li>
+                  <strong className="text-amber-400">Prerequisite:</strong> First add your bot to the channel/group as an <strong>Administrator</strong> with &quot;Post Messages&quot; permission.
+                </li>
+                <li>
+                  <strong className="text-slate-200">Option A (Public Channel):</strong> Simply enter the channel handle with <code className="text-emerald-400">@</code> (e.g. <code className="text-emerald-400">@my_alerts</code>).
+                </li>
+                <li>
+                  <strong className="text-slate-200">Option B (Private Channel/Group):</strong> Forward any message from the channel to <code className="text-emerald-400">@RawDataBot</code> or <code className="text-emerald-400">@userinfobot</code> to receive the numeric ID (starts with <code className="text-emerald-400">-100...</code>).
+                </li>
+              </ul>
             </div>
 
             <button
               type="submit"
               disabled={isAddingChannel || bots.length === 0}
-              className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
             >
               {isAddingChannel ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               Verify & Link Channel
@@ -288,15 +626,40 @@ export default function TelegramDashboardPage() {
         </div>
       </div>
 
-      {/* Direct Test Message Sender UI */}
+      {/* Direct Test Message Sender UI with Structured Object Presets */}
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
-            <Sparkles className="w-5 h-5" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Live Message Dispatcher</h2>
+              <p className="text-xs text-slate-400">
+                Send structured object notifications to your channel with syntax-highlighted code blocks
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-white">Live Message Dispatcher</h2>
-            <p className="text-xs text-slate-400">Send an instant test notification to any configured channel</p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleResetTemplate}
+              className="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 transition-colors flex items-center gap-1.5"
+              title="Reset template to default structured example"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset Example
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyText}
+              className="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 transition-colors flex items-center gap-1.5"
+              title="Copy message payload"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? "Copied!" : "Copy"}
+            </button>
           </div>
         </div>
 
@@ -351,33 +714,96 @@ export default function TelegramDashboardPage() {
               </label>
               <select
                 value={parseMode}
-                onChange={(e) => setParseMode(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm"
+                onChange={(e) => handleParseModeChange(e.target.value as "HTML" | "MarkdownV2" | "")}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
-                <option value="HTML">HTML</option>
-                <option value="MarkdownV2">MarkdownV2</option>
-                <option value="">Plain Text</option>
+                <option value="HTML">HTML (Recommended for Objects)</option>
+                <option value="MarkdownV2">MarkdownV2 (Full Escaped Object)</option>
+                <option value="">Plain Text (Raw Object)</option>
               </select>
             </div>
           </div>
 
+          {/* Structured Object Presets Selector */}
+          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                <FileCode className="w-3.5 h-3.5 text-purple-400" />
+                Select Structured Object Payload Example:
+              </span>
+              <span className="text-[11px] text-slate-500 font-mono">
+                Format: {parseMode || "Plain Text"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {(Object.keys(PRESET_TEMPLATES) as PresetKey[]).map((key) => {
+                const item = PRESET_TEMPLATES[key];
+                const IconComponent = item.icon;
+                const isSelected = activePreset === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleSelectPreset(key)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium border text-left transition-all flex items-center gap-2.5 ${
+                      isSelected
+                        ? "bg-purple-600/15 border-purple-500/50 text-white shadow-sm shadow-purple-900/20"
+                        : "bg-slate-900/80 hover:bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <IconComponent className={`w-4 h-4 shrink-0 ${isSelected ? "text-purple-400" : "text-slate-500"}`} />
+                    <div className="truncate">
+                      <div className="font-semibold text-slate-200">{item.label}</div>
+                      <div className="text-[10px] text-slate-400">{item.badge}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Parse Mode Specific Architecture Advice */}
+            <div className="mt-2 pt-2 border-t border-slate-800/60 text-[11px]">
+              {parseMode === "MarkdownV2" && (
+                <p className="text-purple-300/90 leading-relaxed">
+                  <strong className="text-purple-400">MarkdownV2 Object Format:</strong> Special characters outside code blocks (<code className="text-amber-400 font-mono">. - ! # ( ) [ ] _ * ~ ` &gt; + = | &#123; &#125;</code>) are escaped with a backslash (<code className="text-amber-400 font-mono">\.</code>), while JSON inside <code className="text-amber-400 font-mono">```json ... ```</code> remains clean and syntax-highlighted in Telegram.
+                </p>
+              )}
+              {parseMode === "HTML" && (
+                <p className="text-emerald-300/90 leading-relaxed">
+                  <strong className="text-emerald-400">HTML Object Format:</strong> Uses standard <code className="text-emerald-400 font-mono">&lt;pre&gt;&lt;code class=&quot;language-json&quot;&gt;...&lt;/code&gt;&lt;/pre&gt;</code> for syntax-colored JSON blocks, with <code className="text-emerald-400 font-mono">&lt;b&gt;</code> labels and <code className="text-emerald-400 font-mono">&lt;code&gt;</code> inline tags.
+                </p>
+              )}
+              {parseMode === "" && (
+                <p className="text-slate-400 leading-relaxed">
+                  <strong className="text-slate-300">Plain Text Object Format:</strong> Pure text with indented JSON payload, without any markup tags or entity escaping requirements.
+                </p>
+              )}
+            </div>
+          </div>
+
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Message Content
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-medium text-slate-300">
+                Message Content ({parseMode || "Plain Text"} Payload)
+              </label>
+              <span className="text-[11px] text-slate-500 font-mono">
+                {testText.length} characters / {testText.split("\n").length} lines
+              </span>
+            </div>
             <textarea
-              rows={3}
+              rows={11}
               required
               value={testText}
               onChange={(e) => setTestText(e.target.value)}
-              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-inner"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSendingTest || bots.length === 0}
-            className="py-2.5 px-6 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center gap-2"
+            className="py-2.5 px-6 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center gap-2 shadow-lg shadow-purple-600/20"
           >
             {isSendingTest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Dispatch Live Notification
