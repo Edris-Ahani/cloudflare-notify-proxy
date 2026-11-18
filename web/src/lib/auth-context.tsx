@@ -7,6 +7,7 @@ import { api } from "./api";
 export interface User {
   id: string;
   phoneNumber: string;
+  fallbackCallCount?: number;
   createdAt: string;
   cloudflareConfig?: {
     id: string;

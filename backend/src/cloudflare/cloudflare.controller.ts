@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   Request,
   UseGuards,
@@ -40,5 +42,13 @@ export class CloudflareController {
   @Get("deployments")
   async listDeployments(@Request() req: { user: { userId: string } }) {
     return this.cloudflareService.listDeployments(req.user.userId);
+  }
+
+  @Delete("deployments/:id")
+  async deleteDeployment(
+    @Request() req: { user: { userId: string } },
+    @Param("id") id: string
+  ) {
+    return this.cloudflareService.deleteDeployment(req.user.userId, id);
   }
 }

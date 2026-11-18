@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Zap,
   Key,
+  Trash2,
 } from "lucide-react";
 
 export default function CloudflareDashboardPage() {
@@ -35,6 +36,7 @@ export default function CloudflareDashboardPage() {
   // Deployments list
   const [deployments, setDeployments] = useState<any[]>([]);
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadDeployments = async () => {
     try {
@@ -42,6 +44,27 @@ export default function CloudflareDashboardPage() {
       setDeployments(data);
     } catch {
       // ignore if empty
+    }
+  };
+
+  const handleDeleteDeployment = async (id: string, scriptName: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete worker '${scriptName}'? This will remove it from your Cloudflare account and switch your account back to fallback mode.`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(id);
+    try {
+      await api.cloudflare.deleteDeployment(id);
+      await loadDeployments();
+      await refreshUser();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete worker deployment.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -291,6 +314,7 @@ export default function CloudflareDashboardPage() {
                   <th className="py-3 px-4">API Secret Key</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -334,6 +358,21 @@ export default function CloudflareDashboardPage() {
                     </td>
                     <td className="py-3 px-4 text-xs text-slate-500">
                       {new Date(d.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => handleDeleteDeployment(d.id, d.scriptName)}
+                        disabled={deletingId === d.id}
+                        className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all inline-flex items-center gap-1.5 text-xs font-medium disabled:opacity-50"
+                        title="Delete worker from Cloudflare and system"
+                      >
+                        {deletingId === d.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

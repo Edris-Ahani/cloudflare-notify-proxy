@@ -60,6 +60,7 @@ export const api = {
     deployWorker: (body: { botId: string; defaultChatId?: string; scriptName?: string }) =>
       fetchApi("/cloudflare/deploy-worker", { method: "POST", body: JSON.stringify(body) }),
     listDeployments: () => fetchApi("/cloudflare/deployments", { method: "GET" }),
+    deleteDeployment: (id: string) => fetchApi(`/cloudflare/deployments/${id}`, { method: "DELETE" }),
   },
   telegram: {
     addBot: (body: { botToken: string }) =>

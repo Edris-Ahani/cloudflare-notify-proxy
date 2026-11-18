@@ -108,15 +108,35 @@ export class CloudflareService {
 
     const apiSecretKey = crypto.randomBytes(32).toString("hex");
 
-    // 4. Upload Worker Script to Cloudflare
+    // 4. Upload ES Module Worker Script to Cloudflare using multipart/form-data
     const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${cfConfig.accountId}/workers/scripts/${scriptName}`;
+
+    const form = new FormData();
+    form.append(
+      "metadata",
+      new Blob(
+        [
+          JSON.stringify({
+            main_module: "worker.js",
+            compatibility_date: "2024-01-01",
+          }),
+        ],
+        { type: "application/json" }
+      )
+    );
+
+    form.append(
+      "worker.js",
+      new Blob([WORKER_SCRIPT_TEMPLATE], { type: "application/javascript+module" }),
+      "worker.js"
+    );
+
     const uploadRes = await fetch(uploadUrl, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${apiToken}`,
-        "Content-Type": "application/javascript",
       },
-      body: WORKER_SCRIPT_TEMPLATE,
+      body: form,
     });
 
     if (!uploadRes.ok) {
@@ -198,6 +218,50 @@ export class CloudflareService {
       where: { userId },
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  async deleteDeployment(userId: string, deploymentId: string) {
+    const deployment = await this.prisma.workerDeployment.findFirst({
+      where: { id: deploymentId, userId },
+    });
+
+    if (!deployment) {
+      throw new NotFoundException("Worker deployment not found");
+    }
+
+    // Attempt to delete the script from Cloudflare account if config exists
+    const cfConfig = await this.prisma.cloudflareConfig.findUnique({
+      where: { userId },
+    });
+
+    if (cfConfig) {
+      try {
+        const apiToken = this.crypto.decrypt(
+          cfConfig.apiTokenEncrypted,
+          cfConfig.apiTokenIv,
+          cfConfig.apiTokenTag
+        );
+        const deleteUrl = `https://api.cloudflare.com/client/v4/accounts/${cfConfig.accountId}/workers/scripts/${deployment.scriptName}`;
+        await fetch(deleteUrl, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+          },
+        });
+      } catch {
+        // Proceed with database deletion even if remote Cloudflare call fails
+      }
+    }
+
+    // Delete record from database
+    await this.prisma.workerDeployment.delete({
+      where: { id: deploymentId },
+    });
+
+    return {
+      ok: true,
+      message: `Worker deployment '${deployment.scriptName}' deleted successfully`,
+    };
   }
 
   private async verifyTokenWithCloudflare(token: string): Promise<boolean> {

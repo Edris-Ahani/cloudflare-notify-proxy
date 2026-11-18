@@ -174,9 +174,56 @@ export class TelegramService {
       body.parse_mode = dto.parseMode;
     }
 
-    // Forward test message through Cloudflare Worker proxy
-    const { url, headers } = this.getTelegramRequest(`bot${botToken}/sendMessage`);
-    const res = await fetch(url, {
+    // Check if user has an active deployed Cloudflare Worker
+    const userDeployment = await this.prisma.workerDeployment.findFirst({
+      where: { userId, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    let targetUrl: string;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    const MAX_TRIAL_CALLS = 10;
+    let usedCustomWorker = false;
+    let remainingTrialCalls: number | null = null;
+
+    if (userDeployment) {
+      // Route through the user's own deployed Cloudflare Worker (unlimited)
+      const cleanUrl = userDeployment.workerUrl.replace(/\/$/, "");
+      targetUrl = `${cleanUrl}/tg-proxy/bot${botToken}/sendMessage`;
+      headers["Authorization"] = `Bearer ${userDeployment.apiSecretKey}`;
+      usedCustomWorker = true;
+    } else {
+      // Enforce trial limit on platform system proxy (max 10 calls without own worker)
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { fallbackCallCount: true },
+      });
+
+      const currentCount = user?.fallbackCallCount || 0;
+      if (currentCount >= MAX_TRIAL_CALLS) {
+        throw new BadRequestException(
+          `Trial limit reached (${currentCount}/${MAX_TRIAL_CALLS} fallback calls used). You must connect your Cloudflare account and deploy your own dedicated worker to continue sending messages.`
+        );
+      }
+
+      // Increment fallback usage count
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { fallbackCallCount: { increment: 1 } },
+      });
+
+      remainingTrialCalls = MAX_TRIAL_CALLS - (currentCount + 1);
+
+      // Route through platform-level system proxy
+      const sysReq = this.getTelegramRequest(`bot${botToken}/sendMessage`);
+      targetUrl = sysReq.url;
+      Object.assign(headers, sysReq.headers);
+    }
+
+    const res = await fetch(targetUrl, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
@@ -193,6 +240,8 @@ export class TelegramService {
     return {
       ok: true,
       message: "Message sent successfully",
+      usedCustomWorker,
+      remainingTrialCalls,
       telegramResponse: data,
     };
   }

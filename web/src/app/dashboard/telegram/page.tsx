@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import {
@@ -19,6 +20,9 @@ import {
   Copy,
   Check,
   FileCode,
+  Zap,
+  ShieldAlert,
+  AlertTriangle,
 } from "lucide-react";
 
 type PresetKey = "order" | "server" | "user";
@@ -363,6 +367,10 @@ export default function TelegramDashboardPage() {
   const [copied, setCopied] = useState(false);
 
   const bots = user?.telegramBots || [];
+  const hasDedicatedWorker = Boolean(user?.deployments && user.deployments.length > 0);
+  const fallbackCount = user?.fallbackCallCount || 0;
+  const trialLimitReached = !hasDedicatedWorker && fallbackCount >= 10;
+  const remainingTrialCalls = Math.max(0, 10 - fallbackCount);
 
   useEffect(() => {
     if (bots.length > 0) {
@@ -452,13 +460,24 @@ export default function TelegramDashboardPage() {
     setIsSendingTest(true);
 
     try {
-      await api.telegram.sendTest({
+      const res = await api.telegram.sendTest({
         botId: testBotId,
         chatId: testChatId,
         text: testText,
         parseMode: parseMode || undefined,
       });
-      setTestSuccess("Test message successfully delivered to Telegram!");
+
+      if (res.usedCustomWorker) {
+        setTestSuccess("Test message delivered via your dedicated Cloudflare Worker! (Unlimited Mode)");
+      } else if (res.remainingTrialCalls !== null && res.remainingTrialCalls !== undefined) {
+        setTestSuccess(
+          `Test message delivered via system proxy! (${res.remainingTrialCalls} of 10 fallback trial calls remaining)`
+        );
+      } else {
+        setTestSuccess("Test message successfully delivered to Telegram!");
+      }
+
+      await refreshUser();
     } catch (err: any) {
       setTestError(err.message || "Failed to send message.");
     } finally {
@@ -642,6 +661,22 @@ export default function TelegramDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {hasDedicatedWorker ? (
+              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5" />
+                Unlimited Worker Mode
+              </span>
+            ) : trialLimitReached ? (
+              <span className="px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5" />
+                Trial Limit Reached (10/10)
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Trial: {remainingTrialCalls}/10 Calls Left
+              </span>
+            )}
             <button
               type="button"
               onClick={handleResetTemplate}
@@ -672,6 +707,40 @@ export default function TelegramDashboardPage() {
         {testError && (
           <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4" /> {testError}
+          </div>
+        )}
+
+        {trialLimitReached && (
+          <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <span>
+                You have reached the maximum trial limit (10/10 test calls) via our system proxy. To continue sending unlimited messages, you must deploy your own dedicated worker.
+              </span>
+            </div>
+            <Link
+              href="/dashboard/cloudflare"
+              className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-xs whitespace-nowrap transition-colors"
+            >
+              Deploy Worker in Cloudflare →
+            </Link>
+          </div>
+        )}
+
+        {!hasDedicatedWorker && !trialLimitReached && (
+          <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300/90 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                Temporary System Proxy Mode: <strong>{remainingTrialCalls} of 10</strong> trial test calls remaining.
+              </span>
+            </div>
+            <Link
+              href="/dashboard/cloudflare"
+              className="text-amber-400 hover:text-amber-300 underline font-medium text-[11px] whitespace-nowrap"
+            >
+              Deploy Worker for Unlimited Sends →
+            </Link>
           </div>
         )}
 
@@ -802,11 +871,11 @@ export default function TelegramDashboardPage() {
 
           <button
             type="submit"
-            disabled={isSendingTest || bots.length === 0}
+            disabled={isSendingTest || bots.length === 0 || trialLimitReached}
             className="py-2.5 px-6 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center gap-2 shadow-lg shadow-purple-600/20"
           >
             {isSendingTest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            Dispatch Live Notification
+            {trialLimitReached ? "Trial Limit Reached (Deploy Worker)" : "Dispatch Live Notification"}
           </button>
         </form>
       </div>

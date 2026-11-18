@@ -92,6 +92,7 @@ export class AuthService {
       select: {
         id: true,
         phoneNumber: true,
+        fallbackCallCount: true,
         createdAt: true,
         cloudflareConfig: {
           select: {
