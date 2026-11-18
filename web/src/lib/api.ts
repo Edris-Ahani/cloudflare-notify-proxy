@@ -76,5 +76,13 @@ export const api = {
       fetchApi("/templates", { method: "POST", body: JSON.stringify(body) }),
     list: () => fetchApi("/templates", { method: "GET" }),
     delete: (id: string) => fetchApi(`/templates/${id}`, { method: "DELETE" }),
+    dispatch: (
+      id: string,
+      body: { botId?: string; chatId?: string; variables?: Record<string, string | number> }
+    ) =>
+      fetchApi(`/templates/${id}/dispatch`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
   },
 };

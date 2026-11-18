@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { TemplateService } from "./template.service";
 import { CreateTemplateDto } from "./dto/create-template.dto";
+import { DispatchTemplateDto } from "./dto/dispatch-template.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
 @UseGuards(JwtAuthGuard)
@@ -36,5 +37,14 @@ export class TemplateController {
     @Param("id") id: string
   ) {
     return this.templateService.delete(req.user.userId, id);
+  }
+
+  @Post(":id/dispatch")
+  async dispatch(
+    @Request() req: { user: { userId: string } },
+    @Param("id") id: string,
+    @Body() dto: DispatchTemplateDto
+  ) {
+    return this.templateService.dispatch(req.user.userId, id, dto);
   }
 }

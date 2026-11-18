@@ -23,6 +23,7 @@ import {
   Zap,
   ShieldAlert,
   AlertTriangle,
+  Bookmark,
 } from "lucide-react";
 
 type PresetKey = "order" | "server" | "user";
@@ -365,6 +366,19 @@ export default function TelegramDashboardPage() {
   const [testSuccess, setTestSuccess] = useState<string | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [userTemplates, setUserTemplates] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.templates.list().then(setUserTemplates).catch(() => {});
+  }, []);
+
+  const handleLoadUserTemplate = (tpl: any) => {
+    const mode = (tpl.parseMode as "HTML" | "MarkdownV2" | "") || "MarkdownV2";
+    setParseMode(mode);
+    setTestText(tpl.content);
+    setTestSuccess(`Loaded saved template: ${tpl.title}`);
+    setTimeout(() => setTestSuccess(null), 3000);
+  };
 
   const bots = user?.telegramBots || [];
   const hasDedicatedWorker = Boolean(user?.deployments && user.deployments.length > 0);
@@ -830,6 +844,40 @@ export default function TelegramDashboardPage() {
                 );
               })}
             </div>
+
+            {/* Saved Templates Selector */}
+            {userTemplates.length > 0 && (
+              <div className="mt-3 pt-2.5 border-t border-slate-800/80">
+                <div className="text-[11px] font-medium text-slate-400 mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-blue-400 font-semibold">
+                    <Bookmark className="w-3.5 h-3.5" />
+                    Load from My Saved Templates:
+                  </span>
+                  <Link
+                    href="/dashboard/templates"
+                    className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    + Manage Templates
+                  </Link>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {userTemplates.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => handleLoadUserTemplate(tpl)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white flex items-center gap-2 transition-all shadow-sm"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                      <span className="font-medium">{tpl.title}</span>
+                      <span className="text-[10px] text-slate-500 font-mono px-1 py-0.5 rounded bg-slate-950">
+                        {tpl.parseMode || "MarkdownV2"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Parse Mode Specific Architecture Advice */}
             <div className="mt-2 pt-2 border-t border-slate-800/60 text-[11px]">
