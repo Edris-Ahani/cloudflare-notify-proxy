@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String             @id @default(uuid())
+  phoneNumber      String             @unique
+  passwordHash     String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  cloudflareConfig CloudflareConfig?
+  telegramBots     TelegramBot[]
+  templates        MessageTemplate[]
+  deployments      WorkerDeployment[]
+
+  @@map("users")
+}
+
+model CloudflareConfig {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId         String
+  apiTokenEncrypted String
+  apiTokenIv        String
+  apiTokenTag       String
+  status            String   @default("ACTIVE")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("cloudflare_configs")
+}
+
+model TelegramBot {
+  id                String            @id @default(uuid())
+  userId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  botName           String
+  botUsername       String
+  botTokenEncrypted String
+  botTokenIv        String
+  botTokenTag       String
+  channels          TelegramChannel[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@map("telegram_bots")
+}
+
+model TelegramChannel {
+  id        String      @id @default(uuid())
+  botId     String
+  bot       TelegramBot @relation(fields: [botId], references: [id], onDelete: Cascade)
+  title     String
+  chatId    String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("telegram_channels")
+}
+
+model MessageTemplate {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  parseMode String   @default("MarkdownV2")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("message_templates")
+}
+
+model WorkerDeployment {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scriptName   String
+  workerUrl    String
+  apiSecretKey String
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("worker_deployments")
+}
