@@ -2,14 +2,11 @@ name = "cloudflare-notify"
 main = "src/index.js"
 compatibility_date = "2023-01-01"
 
-# KV used for OAuth state and Google user records.
-# Create it once, then replace the id values:
-#   npx wrangler kv namespace create AUTH_KV
-#   npx wrangler kv namespace create AUTH_KV --preview
-[[kv_namespaces]]
-binding = "AUTH_KV"
-id = "REPLACE_WITH_AUTH_KV_ID"
-preview_id = "REPLACE_WITH_AUTH_KV_PREVIEW_ID"
+# KV used for OAuth state and Google user records (optional - uncomment if using Google OAuth).
+# [[kv_namespaces]]
+# binding = "AUTH_KV"
+# id = "REPLACE_WITH_AUTH_KV_ID"
+# preview_id = "REPLACE_WITH_AUTH_KV_PREVIEW_ID"
 
 # You can configure environments and variables here or in the Cloudflare dashboard.
 # DO NOT add secrets here. Use wrangler secret put <NAME> or the Cloudflare dashboard.

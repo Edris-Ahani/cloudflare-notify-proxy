@@ -100,6 +100,35 @@ export default {
       return jsonResponse({ ok: true, service: "cloudflare-notify-worker" }, 200, headers);
     }
 
+    // Secure Reverse Proxy for all Telegram API methods (getMe, getChat, sendMessage, etc.)
+    if (path.startsWith("/tg-proxy/")) {
+      if (!verifyApiKey(request, env)) {
+        return jsonResponse({ ok: false, error: "Unauthorized: Invalid or missing Bearer token" }, 401, headers);
+      }
+
+      const telegramPath = path.replace("/tg-proxy", "");
+      const targetUrl = \`https://api.telegram.org\${telegramPath}\${url.search}\`;
+
+      const forwardHeaders = new Headers();
+      if (request.headers.get("content-type")) {
+        forwardHeaders.set("content-type", request.headers.get("content-type"));
+      }
+
+      const init = {
+        method: request.method,
+        headers: forwardHeaders,
+      };
+
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        init.body = await request.text();
+      }
+
+      const tgResp = await fetch(targetUrl, init);
+      const tgData = await tgResp.json().catch(() => ({}));
+
+      return jsonResponse(tgData, tgResp.status, headers);
+    }
+
     if ((request.method === "POST" || request.method === "GET") && path.startsWith("/send/telegram")) {
       if (!verifyApiKey(request, env)) {
         return jsonResponse({ ok: false, error: "Unauthorized: Invalid or missing Bearer token" }, 401, headers);

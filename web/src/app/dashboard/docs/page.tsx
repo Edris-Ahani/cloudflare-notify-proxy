@@ -244,6 +244,63 @@ export default function DocsPage() {
           </pre>
         </div>
       </div>
+
+      {/* Guide Section 4: Environment Variables & Secrets Architecture */}
+      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+            <Shield className="w-4 h-4" />
+          </div>
+          <h2 className="text-lg font-semibold text-white">
+            4. Environment Variables & Security Architecture
+          </h2>
+        </div>
+
+        <p className="text-xs text-slate-400">
+          To protect your credentials, all passwords and tokens are isolated in local files and strictly excluded from git version control via <code className="text-amber-400 font-mono">.gitignore</code>.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <h3 className="font-semibold text-white flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+              Cloudflare Worker (.dev.vars)
+            </h3>
+            <p className="text-slate-400">
+              These variables live exclusively on your Cloudflare Worker:
+            </p>
+            <ul className="space-y-1 font-mono text-slate-300">
+              <li><code className="text-amber-400">API_SECRET_KEY</code>: Worker access auth token</li>
+              <li><code className="text-amber-400">TELEGRAM_BOT_TOKEN</code>: Default Telegram bot token</li>
+              <li><code className="text-slate-500">TELEGRAM_DEFAULT_CHAT_ID</code>: Default channel</li>
+            </ul>
+            <p className="text-[11px] text-slate-500">
+              * Note: The worker itself is the proxy, so it does not need a proxy URL variable.
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <h3 className="font-semibold text-white flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              NestJS Backend (backend/.env / Docker)
+            </h3>
+            <p className="text-slate-400">
+              These variables configure the backend and database:
+            </p>
+            <ul className="space-y-1 font-mono text-slate-300">
+              <li><code className="text-emerald-400">DATABASE_URL</code>: PostgreSQL connection string</li>
+              <li><code className="text-emerald-400">JWT_SECRET</code>: Signs login sessions</li>
+              <li><code className="text-emerald-400">ENCRYPTION_KEY</code>: AES-256 key for user secrets</li>
+              <li><code className="text-emerald-400">TELEGRAM_PROXY_WORKER_URL</code>: Routes 100% of Telegram traffic through your worker</li>
+              <li><code className="text-emerald-400">TELEGRAM_PROXY_SECRET</code>: Matches the worker API_SECRET_KEY</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+          <strong>Git Security Note:</strong> Files containing secrets (<code className="font-mono text-white">.dev.vars</code>, <code className="font-mono text-white">backend/.env</code>, <code className="font-mono text-white">.env</code>) are in <code className="font-mono text-white">.gitignore</code> and never committed to GitHub. Safe templates (<code className="font-mono text-white">.env.example</code>, <code className="font-mono text-white">.env.docker.example</code>) are committed instead.
+        </div>
+      </div>
     </div>
   );
 }

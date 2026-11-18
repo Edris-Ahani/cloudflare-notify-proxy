@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import { CryptoService } from "../common/crypto/crypto.service";
 import { AddTelegramBotDto } from "./dto/add-bot.dto";
@@ -24,14 +25,46 @@ interface TelegramGetMeResult {
 export class TelegramService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly crypto: CryptoService
+    private readonly crypto: CryptoService,
+    private readonly configService: ConfigService
   ) {}
+
+  /**
+   * Constructs the target URL and headers for Telegram API requests.
+   * If TELEGRAM_PROXY_WORKER_URL is configured, all requests are routed
+   * through the Cloudflare Worker proxy rather than calling api.telegram.org directly.
+   */
+  private getTelegramRequest(subPath: string): { url: string; headers: Record<string, string> } {
+    const proxyUrl = this.configService.get<string>("TELEGRAM_PROXY_WORKER_URL");
+    const proxySecret = this.configService.get<string>("TELEGRAM_PROXY_SECRET");
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (proxyUrl) {
+      const cleanProxy = proxyUrl.replace(/\/$/, "");
+      if (proxySecret) {
+        headers["Authorization"] = `Bearer ${proxySecret}`;
+      }
+      return {
+        url: `${cleanProxy}/tg-proxy/${subPath.replace(/^\//, "")}`,
+        headers,
+      };
+    }
+
+    return {
+      url: `https://api.telegram.org/${subPath.replace(/^\//, "")}`,
+      headers,
+    };
+  }
 
   async addBot(userId: string, dto: AddTelegramBotDto) {
     const cleanToken = dto.botToken.trim();
 
-    // Verify token with Telegram Bot API
-    const response = await fetch(`https://api.telegram.org/bot${cleanToken}/getMe`);
+    // Verify token with Telegram Bot API via Cloudflare Worker proxy
+    const { url, headers } = this.getTelegramRequest(`bot${cleanToken}/getMe`);
+    const response = await fetch(url, { headers });
     const data: TelegramGetMeResult = await response.json().catch(() => ({ ok: false }));
 
     if (!response.ok || !data.ok || !data.result) {
@@ -95,10 +128,11 @@ export class TelegramService {
       bot.botTokenTag
     );
 
-    // Verify bot access to target chat / channel
-    const verifyRes = await fetch(
-      `https://api.telegram.org/bot${botToken}/getChat?chat_id=${encodeURIComponent(dto.chatId.trim())}`
+    // Verify bot access to target chat / channel via proxy worker
+    const { url, headers } = this.getTelegramRequest(
+      `bot${botToken}/getChat?chat_id=${encodeURIComponent(dto.chatId.trim())}`
     );
+    const verifyRes = await fetch(url, { headers });
     const verifyData = await verifyRes.json().catch(() => ({ ok: false }));
 
     if (!verifyRes.ok || !verifyData.ok) {
@@ -140,9 +174,11 @@ export class TelegramService {
       body.parse_mode = dto.parseMode;
     }
 
-    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    // Forward test message through Cloudflare Worker proxy
+    const { url, headers } = this.getTelegramRequest(`bot${botToken}/sendMessage`);
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(body),
     });
 
