@@ -1,5 +1,10 @@
 node_modules
 dist
-.env
+coverage
+test
+.env*
 npm-debug.log
 .git
+*.tsbuildinfo
+Dockerfile
+.dockerignore

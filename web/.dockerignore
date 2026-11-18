@@ -2,4 +2,7 @@ node_modules
 .next
 .git
 npm-debug.log
-.env.local
+.env*
+*.tsbuildinfo
+Dockerfile
+.dockerignore
