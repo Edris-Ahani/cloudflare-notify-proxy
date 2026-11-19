@@ -36,6 +36,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (phoneNumber: string, password: string) => Promise<void>;
   register: (phoneNumber: string, password: string) => Promise<void>;
+  setSessionToken: (accessToken: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -89,6 +90,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/dashboard");
   };
 
+  const setSessionToken = async (accessToken: string) => {
+    localStorage.setItem("access_token", accessToken);
+    setToken(accessToken);
+    await refreshUser();
+    router.push("/dashboard");
+  };
+
   const logout = () => {
     localStorage.removeItem("access_token");
     setUser(null);
@@ -104,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        setSessionToken,
         logout,
         refreshUser,
       }}

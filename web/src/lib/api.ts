@@ -53,6 +53,27 @@ export const api = {
     login: (body: { phoneNumber: string; password: string }) =>
       fetchApi("/auth/login", { method: "POST", body: JSON.stringify(body) }),
     me: (token?: string) => fetchApi("/auth/me", { method: "GET", token }),
+    telegramOtp: {
+      initiate: (body: { phoneNumber: string }): Promise<{
+        sessionToken: string;
+        botUsername: string;
+        deepLink: string;
+        expiresAt: string;
+      }> =>
+        fetchApi("/auth/telegram-otp/initiate", { method: "POST", body: JSON.stringify(body) }),
+      status: (token: string): Promise<{
+        sessionToken: string;
+        phoneNumber: string;
+        hasStartedBot: boolean;
+        hasOtpSent: boolean;
+        isVerified: boolean;
+        isExpired: boolean;
+        expiresAt: string;
+      }> =>
+        fetchApi(`/auth/telegram-otp/status/${token}`, { method: "GET" }),
+      verify: (body: { sessionToken: string; otpCode: string; password?: string }) =>
+        fetchApi("/auth/telegram-otp/verify", { method: "POST", body: JSON.stringify(body) }),
+    },
   },
   cloudflare: {
     saveConfig: (body: { accountId: string; apiToken: string }) =>

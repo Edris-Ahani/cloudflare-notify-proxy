@@ -2,6 +2,8 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  OnModuleInit,
+  OnModuleDestroy,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
@@ -21,13 +23,215 @@ interface TelegramGetMeResult {
   description?: string;
 }
 
+function escapeMarkdownV2(text: string = ""): string {
+  return String(text).replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+}
+
 @Injectable()
-export class TelegramService {
+export class TelegramService implements OnModuleInit, OnModuleDestroy {
+  private cachedSystemBotUsername: string | null = null;
+  private pollingTimer: NodeJS.Timeout | null = null;
+  private lastUpdateOffset: number = 0;
+  private isPollingActive: boolean = false;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly crypto: CryptoService,
     private readonly configService: ConfigService
   ) {}
+
+  async onModuleInit() {
+    const shouldPoll =
+      this.configService.get<string>("TELEGRAM_ENABLE_POLLING") === "true" ||
+      process.env.NODE_ENV !== "production";
+
+    if (shouldPoll && this.getSystemBotToken()) {
+      this.startLongPolling();
+    }
+  }
+
+  onModuleDestroy() {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
+    }
+  }
+
+  getSystemBotToken(): string {
+    return (
+      this.configService.get<string>("TELEGRAM_SYSTEM_BOT_TOKEN") ||
+      this.configService.get<string>("TELEGRAM_BOT_TOKEN") ||
+      "8841321198:AAHABGxlAnSWZoXY3iBNdmzdKPipRlypmao"
+    );
+  }
+
+  async getSystemBotUsername(): Promise<string> {
+    if (this.cachedSystemBotUsername) {
+      return this.cachedSystemBotUsername;
+    }
+
+    const envUser = this.configService.get<string>("TELEGRAM_SYSTEM_BOT_USERNAME");
+    if (envUser) {
+      this.cachedSystemBotUsername = envUser.replace(/^@/, "");
+      return this.cachedSystemBotUsername;
+    }
+
+    const token = this.getSystemBotToken();
+    const { url, headers } = this.getTelegramRequest(`bot${token}/getMe`);
+    const res = await fetch(url, { headers });
+    const data: TelegramGetMeResult = await res.json().catch(() => ({ ok: false }));
+
+    if (data.ok && data.result?.username) {
+      this.cachedSystemBotUsername = data.result.username;
+      return this.cachedSystemBotUsername;
+    }
+
+    return "EA_Lab_MSG_Bot";
+  }
+
+  async sendSystemBotMessage(chatId: string, text: string, parseMode: string = "MarkdownV2") {
+    const token = this.getSystemBotToken();
+    if (!token) return;
+
+    const { url, headers } = this.getTelegramRequest(`bot${token}/sendMessage`);
+    await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: parseMode,
+      }),
+    }).catch(() => null);
+  }
+
+  async handleIncomingUpdate(update: any): Promise<boolean> {
+    if (!update || !update.message) return false;
+    const msg = update.message;
+    const chatId = String(msg.chat?.id || "");
+    const text = String(msg.text || "").trim();
+    const contact = msg.contact;
+
+    // Handle /start with token: /start otp_<sessionToken>
+    if (text.startsWith("/start")) {
+      const tokenPart = text.replace("/start", "").trim();
+      const sessionToken = tokenPart.replace(/^otp_/, "").trim();
+
+      if (sessionToken) {
+        const session = await this.prisma.telegramOtpSession.findFirst({
+          where: {
+            sessionToken,
+            expiresAt: { gt: new Date() },
+          },
+        });
+
+        if (session) {
+          // Generate 5-digit verification code
+          const otp = Math.floor(10000 + Math.random() * 90000).toString();
+
+          await this.prisma.telegramOtpSession.update({
+            where: { id: session.id },
+            data: {
+              otpCode: otp,
+              telegramChatId: chatId,
+              telegramUsername: msg.from?.username || null,
+            },
+          });
+
+          const firstName = escapeMarkdownV2(msg.from?.first_name || "User");
+          const otpMsg = [
+            "🔐 *Cloudflare Notify Verification*",
+            "━━━━━━━━━━━━━━━━━━━━━",
+            `Hello *${firstName}* 👋`,
+            "",
+            "Your 5\\-digit verification code is:",
+            `👉 \`${otp}\` 👈`,
+            "_(Tap the code above to copy it)_",
+            "",
+            "⏱ Valid for 5 minutes\\.",
+            "⚠️ Never share this security code with anyone\\.",
+          ].join("\n");
+
+          await this.sendSystemBotMessage(chatId, otpMsg, "MarkdownV2");
+          return true;
+        }
+      }
+
+      // Default greeting if /start has no token
+      const welcomeMsg = [
+        "👋 *Welcome to Cloudflare Notify Bot*",
+        "━━━━━━━━━━━━━━━━━━━━━",
+        "This bot sends instant notifications and one\\-time verification codes for your Cloudflare Notify platform account\\.",
+        "",
+        "To sign up or verify your account, please click the Telegram verification button on the registration page\\.",
+      ].join("\n");
+      await this.sendSystemBotMessage(chatId, welcomeMsg, "MarkdownV2");
+      return true;
+    }
+
+    // Handle Contact Sharing
+    if (contact && contact.phone_number) {
+      let contactPhone = contact.phone_number.trim().replace(/\s+/g, "");
+      if (contactPhone.startsWith("+98")) contactPhone = "0" + contactPhone.slice(3);
+      if (contactPhone.startsWith("0098")) contactPhone = "0" + contactPhone.slice(4);
+
+      const session = await this.prisma.telegramOtpSession.findFirst({
+        where: {
+          phoneNumber: contactPhone,
+          expiresAt: { gt: new Date() },
+        },
+      });
+
+      if (session) {
+        await this.prisma.telegramOtpSession.update({
+          where: { id: session.id },
+          data: {
+            isVerified: true,
+            telegramChatId: chatId,
+            telegramUsername: msg.from?.username || null,
+          },
+        });
+
+        await this.sendSystemBotMessage(
+          chatId,
+          "✅ *Phone Number Verified!*\n\nYou can now return to the registration page to complete your signup.",
+          "MarkdownV2"
+        );
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private startLongPolling() {
+    this.pollingTimer = setInterval(async () => {
+      if (this.isPollingActive) return;
+      this.isPollingActive = true;
+      try {
+        const token = this.getSystemBotToken();
+        if (!token) return;
+
+        const { url, headers } = this.getTelegramRequest(
+          `bot${token}/getUpdates?offset=${this.lastUpdateOffset + 1}&timeout=1`
+        );
+        const res = await fetch(url, { headers }).catch(() => null);
+        if (!res || !res.ok) return;
+
+        const data = await res.json().catch(() => null);
+        if (data?.ok && Array.isArray(data.result)) {
+          for (const update of data.result) {
+            this.lastUpdateOffset = Math.max(this.lastUpdateOffset, update.update_id);
+            await this.handleIncomingUpdate(update);
+          }
+        }
+      } catch {
+        // Silently catch polling errors
+      } finally {
+        this.isPollingActive = false;
+      }
+    }, 2500);
+  }
 
   /**
    * Constructs the target URL and headers for Telegram API requests.

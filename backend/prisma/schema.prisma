@@ -11,6 +11,7 @@ model User {
   id               String             @id @default(uuid())
   phoneNumber      String             @unique
   passwordHash     String
+  telegramChatId   String?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   fallbackCallCount Int               @default(0)
@@ -90,4 +91,21 @@ model WorkerDeployment {
   updatedAt    DateTime @updatedAt
 
   @@map("worker_deployments")
+}
+
+model TelegramOtpSession {
+  id               String    @id @default(uuid())
+  phoneNumber      String
+  sessionToken     String    @unique
+  otpCode          String?
+  telegramChatId   String?
+  telegramUsername String?
+  isVerified       Boolean   @default(false)
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([phoneNumber])
+  @@index([sessionToken])
+  @@map("telegram_otp_sessions")
 }
