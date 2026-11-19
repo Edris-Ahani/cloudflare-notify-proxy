@@ -222,7 +222,7 @@ export class AuthService {
         );
       }
 
-      if (dto.otpCode.trim() !== session.otpCode.trim()) {
+      if (!dto.otpCode || dto.otpCode.trim() !== session.otpCode.trim()) {
         throw new BadRequestException("Invalid verification code. Please check your Telegram message.");
       }
     }

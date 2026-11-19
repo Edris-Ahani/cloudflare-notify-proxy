@@ -85,6 +85,48 @@ export default {
       );
     }
 
+    // Inbound Webhook Proxy from Telegram to Backend (Telegram -> Cloudflare Worker -> Backend)
+    if (request.method === "POST" && (path === "/tg-webhook" || path.startsWith("/tg-webhook/"))) {
+      let destinationUrl = env.BACKEND_WEBHOOK_URL || url.searchParams.get("target");
+
+      if (!destinationUrl) {
+        const defaultHost = env.FRONTEND_URL || "https://notify.ozonecowork.ir";
+        destinationUrl = `${defaultHost.replace(/\/$/, "")}/api/telegram/webhook`;
+      }
+
+      // Validate optional secret token if configured on worker
+      if (env.TELEGRAM_WEBHOOK_SECRET) {
+        const receivedSecret = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
+        if (receivedSecret !== env.TELEGRAM_WEBHOOK_SECRET) {
+          return jsonResponse({ ok: false, error: "Invalid webhook secret token" }, 403, headers);
+        }
+      }
+
+      const updatePayload = await request.text();
+
+      const forwardHeaders = new Headers({
+        "Content-Type": "application/json",
+      });
+
+      const secretHeader = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
+      if (secretHeader) {
+        forwardHeaders.set("X-Telegram-Bot-Api-Secret-Token", secretHeader);
+      }
+
+      try {
+        const backendResp = await fetch(destinationUrl, {
+          method: "POST",
+          headers: forwardHeaders,
+          body: updatePayload,
+        });
+
+        const backendData = await backendResp.json().catch(() => ({ ok: backendResp.ok }));
+        return jsonResponse(backendData, backendResp.status, headers);
+      } catch {
+        return jsonResponse({ ok: false, error: "Failed to forward update to backend" }, 502, headers);
+      }
+    }
+
     // Secure Reverse Proxy for all Telegram API methods (getMe, getChat, sendMessage, etc.)
     if (path.startsWith("/tg-proxy/")) {
       if (!verifyApiKey(request, env)) {

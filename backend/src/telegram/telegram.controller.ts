@@ -54,4 +54,16 @@ export class TelegramController {
     await this.telegramService.handleIncomingUpdate(update);
     return { ok: true };
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("webhook/register")
+  async registerWebhook() {
+    return this.telegramService.registerSystemBotWebhook();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("webhook/info")
+  async getWebhookInfo() {
+    return this.telegramService.getWebhookInfo();
+  }
 }

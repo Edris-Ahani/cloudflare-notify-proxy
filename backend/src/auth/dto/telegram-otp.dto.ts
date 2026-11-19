@@ -14,10 +14,9 @@ export class VerifyTelegramOtpDto {
   @IsString()
   sessionToken: string;
 
-  @IsNotEmpty({ message: "Verification OTP code is required" })
+  @IsOptional()
   @IsString()
-  @MinLength(4, { message: "OTP code must be at least 4 digits" })
-  otpCode: string;
+  otpCode?: string;
 
   @IsOptional()
   @IsString()

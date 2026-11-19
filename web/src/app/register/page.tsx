@@ -105,7 +105,7 @@ export default function RegisterPage() {
     try {
       const res = await api.auth.telegramOtp.verify({
         sessionToken,
-        otpCode: otpCode.trim(),
+        otpCode: otpCode.trim() || undefined,
         password,
       });
 

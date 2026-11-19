@@ -71,7 +71,7 @@ export const api = {
         expiresAt: string;
       }> =>
         fetchApi(`/auth/telegram-otp/status/${token}`, { method: "GET" }),
-      verify: (body: { sessionToken: string; otpCode: string; password?: string }) =>
+      verify: (body: { sessionToken: string; otpCode?: string; password?: string }) =>
         fetchApi("/auth/telegram-otp/verify", { method: "POST", body: JSON.stringify(body) }),
     },
   },

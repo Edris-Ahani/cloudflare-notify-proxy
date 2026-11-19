@@ -23,6 +23,21 @@ interface TelegramGetMeResult {
   description?: string;
 }
 
+function escapeHtml(text: string = ""): string {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function normalizeIranianPhone(rawPhone: string): string {
+  let digits = String(rawPhone).replace(/\D/g, "");
+  if (digits.startsWith("0098")) digits = digits.slice(4);
+  else if (digits.startsWith("98")) digits = digits.slice(2);
+  else if (digits.startsWith("0")) digits = digits.slice(1);
+  return "0" + digits;
+}
+
 function escapeMarkdownV2(text: string = ""): string {
   return String(text).replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
 }
@@ -55,13 +70,38 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       await this.deleteWebhook(token).catch(() => null);
       this.startLongPolling();
     } else {
-      // In production webhook mode, automatically register the webhook URL with Telegram
-      const frontendUrl = this.configService.get<string>("FRONTEND_URL");
-      if (frontendUrl && frontendUrl.startsWith("https://")) {
-        const webhookUrl = `${frontendUrl.replace(/\/$/, "")}/api/telegram/webhook`;
-        await this.setWebhook(token, webhookUrl).catch(() => null);
-      }
+      // In production webhook mode, automatically register the webhook URL (via Cloudflare proxy if configured)
+      await this.registerSystemBotWebhook().catch(() => null);
     }
+  }
+
+  async registerSystemBotWebhook(): Promise<{ ok: boolean; webhookUrl: string }> {
+    const token = this.getSystemBotToken();
+    if (!token) return { ok: false, webhookUrl: "" };
+
+    const proxyUrl = this.configService.get<string>("TELEGRAM_PROXY_WORKER_URL");
+    const frontendUrl = this.configService.get<string>("FRONTEND_URL");
+
+    let webhookUrl: string;
+
+    if (proxyUrl && proxyUrl.startsWith("https://")) {
+      // Route incoming webhooks through the Cloudflare Worker proxy
+      const cleanProxy = proxyUrl.replace(/\/$/, "");
+      const backendTarget = frontendUrl
+        ? `${frontendUrl.replace(/\/$/, "")}/api/telegram/webhook`
+        : "";
+      webhookUrl = backendTarget
+        ? `${cleanProxy}/tg-webhook?target=${encodeURIComponent(backendTarget)}`
+        : `${cleanProxy}/tg-webhook`;
+    } else if (frontendUrl && frontendUrl.startsWith("https://")) {
+      // Direct Webhook to backend domain
+      webhookUrl = `${frontendUrl.replace(/\/$/, "")}/api/telegram/webhook`;
+    } else {
+      return { ok: false, webhookUrl: "" };
+    }
+
+    const success = await this.setWebhook(token, webhookUrl);
+    return { ok: success, webhookUrl };
   }
 
   async setWebhook(token: string, webhookUrl: string): Promise<boolean> {
@@ -84,6 +124,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     return Boolean(data?.ok);
+  }
+
+  async getWebhookInfo(): Promise<any> {
+    const token = this.getSystemBotToken();
+    if (!token) return { ok: false, error: "No system bot token configured" };
+
+    const { url, headers } = this.getTelegramRequest(`bot${token}/getWebhookInfo`);
+    const res = await fetch(url, { headers }).catch(() => null);
+    return res ? res.json().catch(() => ({ ok: false })) : { ok: false };
   }
 
   onModuleDestroy() {
@@ -130,7 +179,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   async sendSystemBotMessage(
     chatId: string,
     text: string,
-    parseMode: string = "MarkdownV2",
+    parseMode: string = "HTML",
     replyMarkup?: any
   ) {
     const token = this.getSystemBotToken();
@@ -146,11 +195,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       body.reply_markup = replyMarkup;
     }
 
-    await fetch(url, {
+    const res = await fetch(url, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
     }).catch(() => null);
+
+    if (res && !res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.error("[TelegramService] Failed to send message:", errText);
+    }
   }
 
   async handleIncomingUpdate(update: any): Promise<boolean> {
@@ -167,14 +221,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
       if (sessionToken) {
         const session = await this.prisma.telegramOtpSession.findFirst({
-          where: {
-            sessionToken,
-            expiresAt: { gt: new Date() },
-          },
+          where: { sessionToken },
+          orderBy: { createdAt: "desc" },
         });
 
         if (session) {
           const otp = Math.floor(10000 + Math.random() * 90000).toString();
+          const newExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
           await this.prisma.telegramOtpSession.update({
             where: { id: session.id },
@@ -182,39 +235,40 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
               otpCode: otp,
               telegramChatId: chatId,
               telegramUsername: msg.from?.username || null,
+              expiresAt: newExpiresAt,
             },
           });
 
-          const firstName = escapeMarkdownV2(msg.from?.first_name || "User");
+          const firstName = escapeHtml(msg.from?.first_name || "User");
           const otpMsg = [
-            "🔐 *Cloudflare Notify Verification*",
+            "<b>🔐 Cloudflare Notify Verification</b>",
             "━━━━━━━━━━━━━━━━━━━━━",
-            `Hello *${firstName}* 👋`,
+            `Hello <b>${firstName}</b> 👋`,
             "",
-            "Your 5\\-digit verification code is:",
-            `👉 \`${otp}\` 👈`,
-            "_(Tap the code above to copy it)_",
+            "Your 5-digit verification code is:",
+            `👉 <code>${otp}</code> 👈`,
+            "<i>(Tap the code above to copy it)</i>",
             "",
-            "⏱ Valid for 5 minutes\\.",
-            "⚠️ Never share this security code with anyone\\.",
+            "⏱ Valid for 5 minutes.",
+            "⚠️ Never share this security code with anyone.",
           ].join("\n");
 
-          await this.sendSystemBotMessage(chatId, otpMsg, "MarkdownV2");
+          await this.sendSystemBotMessage(chatId, otpMsg, "HTML");
           return true;
         }
       }
 
       // Default greeting if /start has no token
       const welcomeMsg = [
-        "👋 *Welcome to Cloudflare Notify Bot*",
+        "<b>👋 Welcome to Cloudflare Notify Bot</b>",
         "━━━━━━━━━━━━━━━━━━━━━",
         "To receive your verification code:",
         "",
-        "1️⃣ Tap *📱 Share Phone Number* below, or",
-        "2️⃣ Type your 11\\-digit mobile number here \\(e\\.g\\., `09123456789`\\)\\.",
+        "1️⃣ Tap <b>📱 Share Phone Number</b> below, or",
+        "2️⃣ Type your 11-digit mobile number here (e.g., <code>09307634831</code>).",
       ].join("\n");
 
-      await this.sendSystemBotMessage(chatId, welcomeMsg, "MarkdownV2", {
+      await this.sendSystemBotMessage(chatId, welcomeMsg, "HTML", {
         keyboard: [
           [{ text: "📱 Share Phone Number", request_contact: true }],
         ],
@@ -226,20 +280,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     // 2. Handle Contact Sharing
     if (contact && contact.phone_number) {
-      let contactPhone = contact.phone_number.trim().replace(/\s+/g, "");
-      if (contactPhone.startsWith("+98")) contactPhone = "0" + contactPhone.slice(3);
-      if (contactPhone.startsWith("0098")) contactPhone = "0" + contactPhone.slice(4);
+      const contactPhone = normalizeIranianPhone(contact.phone_number);
 
       const session = await this.prisma.telegramOtpSession.findFirst({
-        where: {
-          phoneNumber: contactPhone,
-          expiresAt: { gt: new Date() },
-        },
+        where: { phoneNumber: contactPhone },
         orderBy: { createdAt: "desc" },
       });
 
       if (session) {
         const otp = Math.floor(10000 + Math.random() * 90000).toString();
+        const newExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
         await this.prisma.telegramOtpSession.update({
           where: { id: session.id },
@@ -248,44 +298,41 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             isVerified: true,
             telegramChatId: chatId,
             telegramUsername: msg.from?.username || null,
+            expiresAt: newExpiresAt,
           },
         });
 
-        const firstName = escapeMarkdownV2(msg.from?.first_name || "User");
+        const firstName = escapeHtml(msg.from?.first_name || "User");
         const otpMsg = [
-          "✅ *Phone Number Verified!*",
+          "<b>✅ Phone Number Verified!</b>",
           "━━━━━━━━━━━━━━━━━━━━━",
-          `Hello *${firstName}* 👋`,
+          `Hello <b>${firstName}</b> 👋`,
           "",
-          "Your 5\\-digit verification code is:",
-          `👉 \`${otp}\` 👈`,
+          "Your 5-digit verification code is:",
+          `👉 <code>${otp}</code> 👈`,
+          "<i>(Tap the code above to copy it)</i>",
           "",
-          "You can enter this code on the website to finish registration\\.",
+          "You can now return to the website to complete your registration.",
         ].join("\n");
 
-        await this.sendSystemBotMessage(chatId, otpMsg, "MarkdownV2");
+        await this.sendSystemBotMessage(chatId, otpMsg, "HTML");
         return true;
       }
     }
 
-    // 3. Handle Direct Phone Number message (e.g. 09123456789 or +989123456789)
-    const normalizedDigits = text.replace(/[\s\-\+\(\)]/g, "");
-    if (/^(09|9|\+989|00989|989)\d{8,9}$/.test(text.replace(/[\s\-]/g, ""))) {
-      let cleanPhone = normalizedDigits;
-      if (cleanPhone.startsWith("0098")) cleanPhone = "0" + cleanPhone.slice(4);
-      else if (cleanPhone.startsWith("98")) cleanPhone = "0" + cleanPhone.slice(2);
-      else if (cleanPhone.startsWith("9") && cleanPhone.length === 10) cleanPhone = "0" + cleanPhone;
+    // 3. Handle Direct Phone Number message (e.g. 09307634831 or +989307634831)
+    const rawDigits = text.replace(/\D/g, "");
+    if (rawDigits.length >= 10 && rawDigits.length <= 13) {
+      const cleanPhone = normalizeIranianPhone(text);
 
       const session = await this.prisma.telegramOtpSession.findFirst({
-        where: {
-          phoneNumber: cleanPhone,
-          expiresAt: { gt: new Date() },
-        },
+        where: { phoneNumber: cleanPhone },
         orderBy: { createdAt: "desc" },
       });
 
       if (session) {
         const otp = Math.floor(10000 + Math.random() * 90000).toString();
+        const newExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
         await this.prisma.telegramOtpSession.update({
           where: { id: session.id },
@@ -293,24 +340,25 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             otpCode: otp,
             telegramChatId: chatId,
             telegramUsername: msg.from?.username || null,
+            expiresAt: newExpiresAt,
           },
         });
 
-        const firstName = escapeMarkdownV2(msg.from?.first_name || "User");
+        const firstName = escapeHtml(msg.from?.first_name || "User");
         const otpMsg = [
-          "🔐 *Cloudflare Notify Verification*",
+          "<b>🔐 Cloudflare Notify Verification</b>",
           "━━━━━━━━━━━━━━━━━━━━━",
-          `Hello *${firstName}* 👋`,
+          `Hello <b>${firstName}</b> 👋`,
           "",
-          "Your 5\\-digit verification code is:",
-          `👉 \`${otp}\` 👈`,
-          "_(Tap the code above to copy it)_",
+          "Your 5-digit verification code is:",
+          `👉 <code>${otp}</code> 👈`,
+          "<i>(Tap the code above to copy it)</i>",
           "",
-          "⏱ Valid for 5 minutes\\.",
-          "⚠️ Never share this security code with anyone\\.",
+          "⏱ Valid for 5 minutes.",
+          "⚠️ Never share this security code with anyone.",
         ].join("\n");
 
-        await this.sendSystemBotMessage(chatId, otpMsg, "MarkdownV2");
+        await this.sendSystemBotMessage(chatId, otpMsg, "HTML");
         return true;
       }
     }
