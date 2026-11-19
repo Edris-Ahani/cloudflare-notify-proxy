@@ -166,11 +166,13 @@ export default function CloudflareDashboardPage() {
               <input
                 type="text"
                 required
-                dir="ltr"
+                dir={isRtl ? (accountId ? "ltr" : "rtl") : "ltr"}
                 value={accountId}
                 onChange={(e) => setAccountId(e.target.value)}
                 placeholder={t("cloudflare.accountIdPlaceholder")}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className={`w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                  isRtl ? (accountId ? "text-left" : "text-right") : "text-left"
+                }`}
               />
             </div>
 
@@ -181,7 +183,7 @@ export default function CloudflareDashboardPage() {
               <input
                 type="password"
                 required={!user?.cloudflareConfig}
-                dir="ltr"
+                dir={isRtl ? (apiToken ? "ltr" : "rtl") : "ltr"}
                 value={apiToken}
                 onChange={(e) => setApiToken(e.target.value)}
                 placeholder={
@@ -189,7 +191,9 @@ export default function CloudflareDashboardPage() {
                     ? t("cloudflare.apiTokenPlaceholderSaved")
                     : t("cloudflare.apiTokenPlaceholderNew")
                 }
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className={`w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                  isRtl ? (apiToken ? "text-left" : "text-right") : "text-left"
+                }`}
               />
               <p className="text-xs text-slate-500 mt-1">
                 {t("cloudflare.tokenPermissionHint")}
@@ -269,11 +273,13 @@ export default function CloudflareDashboardPage() {
               </label>
               <input
                 type="text"
-                dir="ltr"
+                dir={isRtl ? (defaultChatId ? "ltr" : "rtl") : "ltr"}
                 value={defaultChatId}
                 onChange={(e) => setDefaultChatId(e.target.value)}
                 placeholder={t("cloudflare.defaultChatIdPlaceholder")}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className={`w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                  isRtl ? (defaultChatId ? "text-left" : "text-right") : "text-left"
+                }`}
               />
             </div>
 
@@ -283,11 +289,13 @@ export default function CloudflareDashboardPage() {
               </label>
               <input
                 type="text"
-                dir="ltr"
+                dir={isRtl ? (scriptName ? "ltr" : "rtl") : "ltr"}
                 value={scriptName}
                 onChange={(e) => setScriptName(e.target.value)}
                 placeholder={t("cloudflare.scriptNamePlaceholder")}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className={`w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                  isRtl ? (scriptName ? "text-left" : "text-right") : "text-left"
+                }`}
               />
             </div>
 

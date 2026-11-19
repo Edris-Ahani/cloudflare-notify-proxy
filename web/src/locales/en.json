@@ -185,7 +185,8 @@
     "noBots": "No bots registered yet. Add your bot token above to get started.",
     "activeStatus": "Active",
     "linkedChannels": "Linked Channels ({count}):",
-    "noChannelsLinked": "No channels linked yet"
+    "noChannelsLinked": "No channels linked yet",
+    "botTokenPlaceholder": "e.g. 123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
   },
   "templates": {
     "title": "Message Templates",

@@ -515,11 +515,13 @@ export default function TelegramDashboardPage() {
               <input
                 type="password"
                 required
-                dir="ltr"
+                dir={isRtl ? (botToken ? "ltr" : "rtl") : "ltr"}
                 value={botToken}
                 onChange={(e) => setBotToken(e.target.value)}
-                placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t("telegram.botTokenPlaceholder")}
+                className={`w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  isRtl ? (botToken ? "text-left" : "text-right") : "text-left"
+                }`}
               />
             </div>
 
@@ -603,11 +605,13 @@ export default function TelegramDashboardPage() {
               <input
                 type="text"
                 required
-                dir="ltr"
+                dir={isRtl ? (channelChatId ? "ltr" : "rtl") : "ltr"}
                 value={channelChatId}
                 onChange={(e) => setChannelChatId(e.target.value)}
                 placeholder={t("telegram.chatIdPlaceholder")}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm"
+                className={`w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm ${
+                  isRtl ? (channelChatId ? "text-left" : "text-right") : "text-left"
+                }`}
               />
             </div>
 
@@ -766,11 +770,13 @@ export default function TelegramDashboardPage() {
               <input
                 type="text"
                 required
-                dir="ltr"
+                dir={isRtl ? (testChatId ? "ltr" : "rtl") : "ltr"}
                 value={testChatId}
                 onChange={(e) => setTestChatId(e.target.value)}
                 placeholder="e.g. -1001987654321"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm"
+                className={`w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm ${
+                  isRtl ? (testChatId ? "text-left" : "text-right") : "text-left"
+                }`}
               />
             </div>
 
