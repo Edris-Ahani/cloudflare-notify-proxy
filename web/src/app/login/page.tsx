@@ -3,10 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n, LanguageSwitcher } from "@/lib/i18n";
 import { Lock, Phone, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { t, isRtl } = useI18n();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -27,14 +29,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center px-4 py-12">
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md flex justify-end mb-3">
+        <LanguageSwitcher />
+      </div>
+
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-sm text-slate-400">Sign in to manage your workers and bots</p>
+          <h1 className="text-2xl font-bold text-white mb-2">{t("auth.welcomeBack")}</h1>
+          <p className="text-sm text-slate-400">{t("auth.signInSubtitle")}</p>
         </div>
 
         {error && (
@@ -47,17 +53,20 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Phone Number
+              {t("auth.phoneLabel")}
             </label>
             <div className="relative">
-              <Phone className="w-5 h-5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Phone className={`w-5 h-5 text-slate-500 absolute top-1/2 -translate-y-1/2 ${isRtl ? "right-3" : "left-3"}`} />
               <input
                 type="tel"
                 required
+                dir="ltr"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="09123456789"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className={`w-full py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                  isRtl ? "pr-10 pl-4 text-right" : "pl-10 pr-4 text-left"
+                }`}
               />
             </div>
           </div>
@@ -65,24 +74,27 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-sm font-medium text-slate-300">
-                Password
+                {t("auth.passwordLabel")}
               </label>
               <Link
                 href="/forgot-password"
                 className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
               >
-                Forgot password?
+                {t("common.forgotPassword")}
               </Link>
             </div>
             <div className="relative">
-              <Lock className="w-5 h-5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Lock className={`w-5 h-5 text-slate-500 absolute top-1/2 -translate-y-1/2 ${isRtl ? "right-3" : "left-3"}`} />
               <input
                 type="password"
                 required
+                dir="ltr"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className={`w-full py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                  isRtl ? "pr-10 pl-4" : "pl-10 pr-4"
+                }`}
               />
             </div>
           </div>
@@ -96,16 +108,17 @@ export default function LoginPage() {
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
-                Sign In <ArrowRight className="w-4 h-4" />
+                {t("common.signIn")}{" "}
+                <ArrowRight className={`w-4 h-4 ${isRtl ? "rotate-180" : ""}`} />
               </>
             )}
           </button>
         </form>
 
         <p className="mt-8 text-center text-sm text-slate-400">
-          Don&apos;t have an account?{" "}
+          {t("common.noAccount")}{" "}
           <Link href="/register" className="text-blue-400 hover:text-blue-300 font-medium">
-            Create an account
+            {t("common.register")}
           </Link>
         </p>
       </div>

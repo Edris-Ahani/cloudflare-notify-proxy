@@ -1,6 +1,8 @@
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { AppModule } from "./app.module";
+import { I18nExceptionFilter } from "./common/filters/i18n-exception.filter";
+import { I18nResponseInterceptor } from "./common/interceptors/i18n-response.interceptor";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -31,7 +33,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-    allowedHeaders: "Content-Type, Authorization",
+    allowedHeaders: "Content-Type, Authorization, Accept-Language, x-lang",
   });
 
   // Global request validation pipeline
@@ -42,6 +44,10 @@ async function bootstrap() {
       transform: true,
     })
   );
+
+  // Global I18n exception filter and response interceptor
+  app.useGlobalFilters(new I18nExceptionFilter());
+  app.useGlobalInterceptors(new I18nResponseInterceptor());
 
   const port = process.env.PORT || 4000;
   await app.listen(port, "0.0.0.0");

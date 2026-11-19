@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n, LanguageSwitcher } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import {
   Lock,
@@ -10,16 +11,15 @@ import {
   ArrowRight,
   Loader2,
   AlertCircle,
-  ShieldCheck,
   Send,
   CheckCircle2,
   ExternalLink,
   RotateCcw,
-  Sparkles,
 } from "lucide-react";
 
 export default function RegisterPage() {
   const { register, setSessionToken } = useAuth();
+  const { t, isRtl } = useI18n();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -143,7 +143,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center px-4 py-12">
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md flex justify-end mb-3">
+        <LanguageSwitcher />
+      </div>
+
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
         {step === "form" ? (
           <>
@@ -151,9 +155,9 @@ export default function RegisterPage() {
               <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto mb-4">
                 <Send className="w-6 h-6" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-2">Create Account</h1>
+              <h1 className="text-2xl font-bold text-white mb-2">{t("auth.createAccount")}</h1>
               <p className="text-sm text-slate-400">
-                Fast & secure signup with Telegram OTP verification
+                {t("auth.signUpSubtitle")}
               </p>
             </div>
 
@@ -167,17 +171,20 @@ export default function RegisterPage() {
             <form onSubmit={handleInitiateTelegram} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Phone Number
+                  {t("auth.phoneLabel")}
                 </label>
                 <div className="relative">
-                  <Phone className="w-5 h-5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Phone className={`w-5 h-5 text-slate-500 absolute top-1/2 -translate-y-1/2 ${isRtl ? "right-3" : "left-3"}`} />
                   <input
                     type="tel"
                     required
+                    dir="ltr"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="09123456789"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className={`w-full py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                      isRtl ? "pr-10 pl-4 text-right" : "pl-10 pr-4 text-left"
+                    }`}
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-1">Format: 09xxxxxxxxx or +989xxxxxxxxx</p>
@@ -185,34 +192,40 @@ export default function RegisterPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Password
+                  {t("auth.passwordLabel")}
                 </label>
                 <div className="relative">
-                  <Lock className="w-5 h-5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className={`w-5 h-5 text-slate-500 absolute top-1/2 -translate-y-1/2 ${isRtl ? "right-3" : "left-3"}`} />
                   <input
                     type="password"
                     required
+                    dir="ltr"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min 8 characters"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className={`w-full py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                      isRtl ? "pr-10 pl-4" : "pl-10 pr-4"
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Confirm Password
+                  {t("auth.confirmPasswordLabel")}
                 </label>
                 <div className="relative">
-                  <Lock className="w-5 h-5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className={`w-5 h-5 text-slate-500 absolute top-1/2 -translate-y-1/2 ${isRtl ? "right-3" : "left-3"}`} />
                   <input
                     type="password"
                     required
+                    dir="ltr"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repeat password"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className={`w-full py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                      isRtl ? "pr-10 pl-4" : "pl-10 pr-4"
+                    }`}
                   />
                 </div>
               </div>
@@ -228,7 +241,7 @@ export default function RegisterPage() {
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    Verify with Telegram (Instant OTP)
+                    {t("auth.verifyWithTelegram")}
                   </>
                 )}
               </button>
@@ -241,7 +254,7 @@ export default function RegisterPage() {
                   disabled={isLoading}
                   className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
                 >
-                  or register with password directly without Telegram
+                  {t("auth.registerDirectly")}
                 </button>
               </div>
             </form>
@@ -253,9 +266,9 @@ export default function RegisterPage() {
               <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto mb-3">
                 <Send className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-1">Verify via Telegram</h2>
+              <h2 className="text-xl font-bold text-white mb-1">{t("auth.verifyViaTelegram")}</h2>
               <p className="text-xs text-slate-400">
-                Target Number: <span className="text-white font-mono">{phoneNumber}</span>
+                {t("auth.targetNumber")}: <span className="text-white font-mono">{phoneNumber}</span>
               </p>
             </div>
 
@@ -279,7 +292,7 @@ export default function RegisterPage() {
                 <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[11px]">
                   1
                 </span>
-                Click the button below to authorize the bot:
+                {t("auth.step1Title")}
               </div>
 
               <a
@@ -289,7 +302,7 @@ export default function RegisterPage() {
                 className="w-full py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs flex items-center justify-center gap-2 transition-colors shadow-md shadow-blue-900/30"
               >
                 <Send className="w-4 h-4" />
-                Open Telegram Bot (@{botUsername}) ➔ Tap Start
+                {t("auth.openBot")} (@{botUsername}) ➔ {t("auth.tapStart")}
                 <ExternalLink className="w-3.5 h-3.5 opacity-70" />
               </a>
 
@@ -298,12 +311,12 @@ export default function RegisterPage() {
                 {hasStartedBot ? (
                   <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    Bot connected! A 5-digit verification code was sent to your chat.
+                    {t("auth.botConnected")}
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 text-[11px] text-amber-400">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Waiting for you to tap Start in Telegram...
+                    {t("auth.waitingBot")}
                   </div>
                 )}
               </div>
@@ -313,12 +326,13 @@ export default function RegisterPage() {
             <form onSubmit={handleCompleteVerification} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  2. Enter 5-Digit Verification Code
+                  {t("auth.step2Title")}
                 </label>
                 <input
                   type="text"
                   maxLength={6}
                   required
+                  dir="ltr"
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
                   placeholder="• • • • •"
@@ -335,8 +349,8 @@ export default function RegisterPage() {
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    Confirm & Complete Registration
-                    <ArrowRight className="w-4 h-4" />
+                    {t("auth.confirmRegistration")}
+                    <ArrowRight className={`w-4 h-4 ${isRtl ? "rotate-180" : ""}`} />
                   </>
                 )}
               </button>
@@ -348,7 +362,7 @@ export default function RegisterPage() {
                   className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1"
                 >
                   <RotateCcw className="w-3 h-3" />
-                  Change Phone Number
+                  {t("auth.changePhone")}
                 </button>
               </div>
             </form>
@@ -356,9 +370,9 @@ export default function RegisterPage() {
         )}
 
         <p className="mt-8 text-center text-sm text-slate-400">
-          Already have an account?{" "}
+          {t("common.haveAccount")}{" "}
           <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium">
-            Sign In
+            {t("common.signIn")}
           </Link>
         </p>
       </div>

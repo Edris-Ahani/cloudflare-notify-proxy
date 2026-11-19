@@ -25,9 +25,16 @@ export async function fetchApi<T = any>(
     authHeader["Authorization"] = `Bearer ${storedToken}`;
   }
 
+  const currentLang =
+    typeof window !== "undefined"
+      ? localStorage.getItem("app_lang") || (document.documentElement.lang as string) || "en"
+      : "en";
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers: {
       "Content-Type": "application/json",
+      "Accept-Language": currentLang,
+      "x-lang": currentLang,
       ...authHeader,
       ...headers,
     },

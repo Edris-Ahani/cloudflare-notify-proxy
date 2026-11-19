@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import Link from "next/link";
 import {
   Cloud,
@@ -16,6 +17,7 @@ import {
 
 export default function DashboardOverviewPage() {
   const { user, deleteAccount } = useAuth();
+  const { t, isRtl } = useI18n();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [confirmInput, setConfirmInput] = useState("");
@@ -41,9 +43,9 @@ export default function DashboardOverviewPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">System Overview</h1>
+        <h1 className="text-3xl font-bold text-white tracking-tight">{t("dashboard.overviewTitle")}</h1>
         <p className="text-slate-400 mt-1">
-          Welcome back! Manage your Cloudflare edge workers, Telegram bots, and notifications.
+          {t("dashboard.overviewSubtitle")}
         </p>
       </div>
 
@@ -51,17 +53,17 @@ export default function DashboardOverviewPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="p-6 rounded-xl bg-slate-900 border border-slate-800">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-400">Cloudflare Account</span>
+            <span className="text-sm font-medium text-slate-400">{t("dashboard.cfAccount")}</span>
             <Cloud className="w-5 h-5 text-amber-400" />
           </div>
           <div className="flex items-center gap-2">
             {hasCloudflare ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Connected
+                <CheckCircle2 className="w-3.5 h-3.5" /> {t("dashboard.connected")}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <AlertTriangle className="w-3.5 h-3.5" /> Setup Required
+                <AlertTriangle className="w-3.5 h-3.5" /> {t("dashboard.setupRequired")}
               </span>
             )}
           </div>
@@ -74,23 +76,23 @@ export default function DashboardOverviewPage() {
 
         <div className="p-6 rounded-xl bg-slate-900 border border-slate-800">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-400">Active Workers</span>
+            <span className="text-sm font-medium text-slate-400">{t("dashboard.activeWorkers")}</span>
             <Cloud className="w-5 h-5 text-blue-400" />
           </div>
           <div className="text-3xl font-extrabold text-white">{workersCount}</div>
           <p className="text-xs text-slate-500 mt-2">
-            Isolated workers deployed to your Cloudflare account
+            {t("dashboard.activeWorkersDesc")}
           </p>
         </div>
 
         <div className="p-6 rounded-xl bg-slate-900 border border-slate-800">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-400">Telegram Bots</span>
+            <span className="text-sm font-medium text-slate-400">{t("dashboard.telegramBots")}</span>
             <Send className="w-5 h-5 text-emerald-400" />
           </div>
           <div className="text-3xl font-extrabold text-white">{botsCount}</div>
           <p className="text-xs text-slate-500 mt-2">
-            Connected bots ready to deliver notifications
+            {t("dashboard.telegramBotsDesc")}
           </p>
         </div>
       </div>
@@ -103,17 +105,18 @@ export default function DashboardOverviewPage() {
               <Cloud className="w-5 h-5" />
             </div>
             <h2 className="text-lg font-semibold text-white mb-1">
-              Deploy Cloudflare Worker
+              {t("dashboard.deployWorkerCardTitle")}
             </h2>
             <p className="text-sm text-slate-400 mb-6">
-              Connect your Cloudflare API token and deploy a private proxy worker in 1-click.
+              {t("dashboard.deployWorkerCardDesc")}
             </p>
           </div>
           <Link
             href="/dashboard/cloudflare"
             className="inline-flex items-center gap-2 text-sm font-medium text-blue-400 hover:text-blue-300"
           >
-            Manage Workers <ArrowRight className="w-4 h-4" />
+            {t("dashboard.manageWorkers")}{" "}
+            <ArrowRight className={`w-4 h-4 ${isRtl ? "rotate-180" : ""}`} />
           </Link>
         </div>
 
@@ -123,17 +126,18 @@ export default function DashboardOverviewPage() {
               <Send className="w-5 h-5" />
             </div>
             <h2 className="text-lg font-semibold text-white mb-1">
-              Configure Telegram Bot
+              {t("dashboard.configureBotCardTitle")}
             </h2>
             <p className="text-sm text-slate-400 mb-6">
-              Add your bot token from BotFather and register target channel chat IDs.
+              {t("dashboard.configureBotCardDesc")}
             </p>
           </div>
           <Link
             href="/dashboard/telegram"
             className="inline-flex items-center gap-2 text-sm font-medium text-emerald-400 hover:text-emerald-300"
           >
-            Manage Bots & Channels <ArrowRight className="w-4 h-4" />
+            {t("dashboard.manageBots")}{" "}
+            <ArrowRight className={`w-4 h-4 ${isRtl ? "rotate-180" : ""}`} />
           </Link>
         </div>
       </div>
@@ -143,19 +147,17 @@ export default function DashboardOverviewPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-base font-semibold text-red-400 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" /> Danger Zone: Delete Account
+              <AlertTriangle className="w-4 h-4" /> {t("dashboard.dangerZoneTitle")}
             </h3>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Permanently delete your user account, stored Cloudflare API credentials, all
-              registered Telegram bots, channels, message templates, and deployment records. This
-              action cannot be undone.
+              {t("dashboard.dangerZoneDesc")}
             </p>
           </div>
           <button
             onClick={() => setShowDeleteModal(true)}
             className="px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 text-xs font-semibold transition-all flex items-center gap-2 self-start md:self-auto"
           >
-            <Trash2 className="w-4 h-4" /> Delete Account & Data
+            <Trash2 className="w-4 h-4" /> {t("dashboard.deleteAccountBtn")}
           </button>
         </div>
       </div>
@@ -169,15 +171,13 @@ export default function DashboardOverviewPage() {
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-base">Delete Account Permanently</h3>
-                <p className="text-xs text-slate-400">Irreversible Action</p>
+                <h3 className="font-bold text-white text-base">{t("dashboard.deleteModalTitle")}</h3>
+                <p className="text-xs text-slate-400">{t("dashboard.irreversible")}</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Are you absolutely sure? All your data including Cloudflare configurations, Telegram
-              bots, message templates, and authentication sessions will be immediately and
-              permanently purged.
+              {t("dashboard.deleteModalDesc")}
             </p>
 
             {deleteError && (
@@ -189,10 +189,11 @@ export default function DashboardOverviewPage() {
 
             <div className="mb-4">
               <label className="block text-xs text-slate-400 mb-1.5">
-                Type <span className="font-mono font-bold text-red-400">DELETE</span> to confirm:
+                {t("dashboard.typeDeleteToConfirm")}
               </label>
               <input
                 type="text"
+                dir="ltr"
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
                 placeholder="DELETE"
@@ -211,7 +212,7 @@ export default function DashboardOverviewPage() {
                 }}
                 className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -223,7 +224,7 @@ export default function DashboardOverviewPage() {
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    <Trash2 className="w-4 h-4" /> Permanently Delete
+                    <Trash2 className="w-4 h-4" /> {t("dashboard.permanentlyDeleteBtn")}
                   </>
                 )}
               </button>
