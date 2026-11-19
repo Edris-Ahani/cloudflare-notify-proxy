@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import {
   Send,
@@ -30,8 +31,8 @@ type PresetKey = "order" | "server" | "user";
 
 interface PresetItem {
   id: PresetKey;
-  label: string;
-  badge: string;
+  labelKey: string;
+  badgeKey: string;
   icon: typeof ShoppingBag;
   templates: {
     MarkdownV2: string;
@@ -43,8 +44,8 @@ interface PresetItem {
 const PRESET_TEMPLATES: Record<PresetKey, PresetItem> = {
   order: {
     id: "order",
-    label: "Order & Payment Object",
-    badge: "E-Commerce",
+    labelKey: "telegram.presetOrderLabel",
+    badgeKey: "telegram.presetOrderBadge",
     icon: ShoppingBag,
     templates: {
       MarkdownV2: `*🚨 NEW ORDER NOTIFICATION 🚨*
@@ -144,28 +145,11 @@ Object Payload (JSON):
   "orderId": "ORD-98421",
   "customer": {
     "name": "Ali Rezaei",
-    "phone": "+989123456789",
-    "email": "customer@example.com"
+    "phone": "+989123456789"
   },
-  "items": [
-    {
-      "sku": "PROD-101",
-      "name": "Cloudflare Pro Notify",
-      "quantity": 1,
-      "unitPrice": 1450000
-    }
-  ],
-  "payment": {
-    "gateway": "ZarinPal",
-    "trackingCode": "ZP-993821049",
-    "currency": "IRR",
-    "isSuccess": true
-  },
-  "metadata": {
-    "clientIp": "185.190.22.4",
-    "userAgent": "TelegramNotify/2.0"
-  },
-  "timestamp": "2026-11-18T11:45:00Z"
+  "amount": 1450000,
+  "currency": "IRR",
+  "status": "PAID"
 }
 Link: https://example.com/orders/98421`,
     },
@@ -173,8 +157,8 @@ Link: https://example.com/orders/98421`,
 
   server: {
     id: "server",
-    label: "Server & Incident Alert",
-    badge: "DevOps",
+    labelKey: "telegram.presetServerLabel",
+    badgeKey: "telegram.presetServerBadge",
     icon: Server,
     templates: {
       MarkdownV2: `*⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️*
@@ -241,16 +225,11 @@ Telemetry Object (JSON):
   "alertId": "ALT-40491",
   "service": "api-gateway",
   "host": "edge-worker-eu1",
-  "region": "eu-central",
   "metrics": {
     "cpuUsage": "84.2%",
-    "memoryUsage": "91.8%",
-    "requestRate": "1,420 req/s",
-    "errorRate": "0.4%"
+    "memoryUsage": "91.8%"
   },
-  "status": "CRITICAL",
-  "environment": "production",
-  "timestamp": "2026-11-18T11:45:00Z"
+  "status": "CRITICAL"
 }
 Link: https://grafana.example.com/alerts/40491`,
     },
@@ -258,8 +237,8 @@ Link: https://grafana.example.com/alerts/40491`,
 
   user: {
     id: "user",
-    label: "User Registration Object",
-    badge: "Auth / Security",
+    labelKey: "telegram.presetUserLabel",
+    badgeKey: "telegram.presetUserBadge",
     icon: UserCheck,
     templates: {
       MarkdownV2: `*👤 NEW USER REGISTRATION*
@@ -324,15 +303,7 @@ User Object (JSON):
   "event": "user.registered",
   "userId": "usr_99120485",
   "phoneNumber": "+989123456789",
-  "role": "MEMBER",
-  "security": {
-    "argon2Hashed": true,
-    "jwtSigned": true,
-    "ipAddress": "5.200.14.88",
-    "device": "Desktop/Chrome"
-  },
-  "status": "ACTIVE",
-  "createdAt": "2026-11-18T11:45:00Z"
+  "status": "ACTIVE"
 }
 Link: https://example.com/users/usr_99120485`,
     },
@@ -341,6 +312,7 @@ Link: https://example.com/users/usr_99120485`,
 
 export default function TelegramDashboardPage() {
   const { user, refreshUser } = useAuth();
+  const { t, isRtl } = useI18n();
 
   // Add Bot state
   const [botToken, setBotToken] = useState("");
@@ -502,9 +474,9 @@ export default function TelegramDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Telegram Bots & Channels</h1>
+        <h1 className="text-3xl font-bold text-white tracking-tight">{t("telegram.title")}</h1>
         <p className="text-slate-400 mt-1">
-          Register your Telegram bots from BotFather and manage linked broadcast channels.
+          {t("telegram.subtitle")}
         </p>
       </div>
 
@@ -516,35 +488,38 @@ export default function TelegramDashboardPage() {
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Add Telegram Bot</h2>
-              <p className="text-xs text-slate-400">Tokens are encrypted at rest with hardware AES-256-GCM</p>
+              <h2 className="text-lg font-semibold text-white">{t("telegram.addBotTitle")}</h2>
+              <p className="text-xs text-slate-400">{t("telegram.addBotSubtitle")}</p>
             </div>
           </div>
 
           {botSuccess && (
             <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> {botSuccess}
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{botSuccess}</span>
             </div>
           )}
 
           {botError && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {botError}
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{botError}</span>
             </div>
           )}
 
           <form onSubmit={handleAddBot} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Bot Token (from @BotFather)
+                {t("telegram.botTokenLabel")}
               </label>
               <input
                 type="password"
                 required
+                dir="ltr"
                 value={botToken}
                 onChange={(e) => setBotToken(e.target.value)}
                 placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -553,8 +528,12 @@ export default function TelegramDashboardPage() {
               disabled={isAddingBot}
               className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
             >
-              {isAddingBot ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Verify & Add Bot
+              {isAddingBot ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              <span>{t("telegram.verifyAddBotBtn")}</span>
             </button>
           </form>
         </div>
@@ -566,27 +545,29 @@ export default function TelegramDashboardPage() {
               <Radio className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Link Channel / Chat</h2>
-              <p className="text-xs text-slate-400">Connect a target channel where alerts will be dispatched</p>
+              <h2 className="text-lg font-semibold text-white">{t("telegram.linkChannelTitle")}</h2>
+              <p className="text-xs text-slate-400">{t("telegram.linkChannelSubtitle")}</p>
             </div>
           </div>
 
           {channelSuccess && (
             <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> {channelSuccess}
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{channelSuccess}</span>
             </div>
           )}
 
           {channelError && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {channelError}
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{channelError}</span>
             </div>
           )}
 
           <form onSubmit={handleAddChannel} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Select Bot
+                {t("telegram.selectBotLabel")}
               </label>
               <select
                 value={selectedBotIdForChannel}
@@ -603,47 +584,42 @@ export default function TelegramDashboardPage() {
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Channel Title / Nickname
+                {t("telegram.channelTitleLabel")}
               </label>
               <input
                 type="text"
                 required
                 value={channelTitle}
                 onChange={(e) => setChannelTitle(e.target.value)}
-                placeholder="e.g. Production Alerts Channel"
+                placeholder={t("telegram.channelTitlePlaceholder")}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Chat ID or @channelusername
+                {t("telegram.chatIdLabel")}
               </label>
               <input
                 type="text"
                 required
+                dir="ltr"
                 value={channelChatId}
                 onChange={(e) => setChannelChatId(e.target.value)}
-                placeholder="e.g. @my_channel or -1001987654321"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm"
+                placeholder={t("telegram.chatIdPlaceholder")}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm"
               />
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-400 space-y-1.5">
+            <div className={`p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-400 space-y-1.5 ${isRtl ? "text-right" : "text-left"}`}>
               <div className="flex items-center gap-1.5 text-slate-300 font-medium">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                How to find your Chat ID:
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>{t("telegram.chatIdGuideTitle")}</span>
               </div>
-              <ul className="space-y-1 text-[11px] list-disc list-inside text-slate-400">
-                <li>
-                  <strong className="text-amber-400">Prerequisite:</strong> First add your bot to the channel/group as an <strong>Administrator</strong> with &quot;Post Messages&quot; permission.
-                </li>
-                <li>
-                  <strong className="text-slate-200">Option A (Public Channel):</strong> Simply enter the channel handle with <code className="text-emerald-400">@</code> (e.g. <code className="text-emerald-400">@my_alerts</code>).
-                </li>
-                <li>
-                  <strong className="text-slate-200">Option B (Private Channel/Group):</strong> Forward any message from the channel to <code className="text-emerald-400">@RawDataBot</code> or <code className="text-emerald-400">@userinfobot</code> to receive the numeric ID (starts with <code className="text-emerald-400">-100...</code>).
-                </li>
+              <ul className="space-y-1.5 text-[11px] list-disc list-inside text-slate-400 leading-relaxed">
+                <li>{t("telegram.chatIdGuidePrereq")}</li>
+                <li>{t("telegram.chatIdGuideOptionA")}</li>
+                <li>{t("telegram.chatIdGuideOptionB")}</li>
               </ul>
             </div>
 
@@ -652,8 +628,12 @@ export default function TelegramDashboardPage() {
               disabled={isAddingChannel || bots.length === 0}
               className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
             >
-              {isAddingChannel ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Verify & Link Channel
+              {isAddingChannel ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              <span>{t("telegram.verifyLinkChannelBtn")}</span>
             </button>
           </form>
         </div>
@@ -667,9 +647,9 @@ export default function TelegramDashboardPage() {
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Live Message Dispatcher</h2>
+              <h2 className="text-lg font-semibold text-white">{t("telegram.dispatcherTitle")}</h2>
               <p className="text-xs text-slate-400">
-                Send structured object notifications to your channel with syntax-highlighted code blocks
+                {t("telegram.dispatcherSubtitle")}
               </p>
             </div>
           </div>
@@ -678,49 +658,51 @@ export default function TelegramDashboardPage() {
             {hasDedicatedWorker ? (
               <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5" />
-                Unlimited Worker Mode
+                {t("telegram.unlimitedMode")}
               </span>
             ) : trialLimitReached ? (
               <span className="px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-center gap-1.5">
                 <ShieldAlert className="w-3.5 h-3.5" />
-                Trial Limit Reached (10/10)
+                {t("telegram.trialLimitReached")}
               </span>
             ) : (
               <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5" />
-                Trial: {remainingTrialCalls}/10 Calls Left
+                {t("telegram.trialRemaining").replace("{remaining}", String(remainingTrialCalls))}
               </span>
             )}
             <button
               type="button"
               onClick={handleResetTemplate}
               className="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 transition-colors flex items-center gap-1.5"
-              title="Reset template to default structured example"
+              title={t("telegram.resetExample")}
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset Example
+              <span>{t("telegram.resetExample")}</span>
             </button>
             <button
               type="button"
               onClick={handleCopyText}
               className="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 transition-colors flex items-center gap-1.5"
-              title="Copy message payload"
+              title={t("telegram.copyPayload")}
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? "Copied!" : "Copy"}
+              <span>{copied ? t("telegram.copied") : t("telegram.copyPayload")}</span>
             </button>
           </div>
         </div>
 
         {testSuccess && (
           <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> {testSuccess}
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{testSuccess}</span>
           </div>
         )}
 
         {testError && (
           <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" /> {testError}
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{testError}</span>
           </div>
         )}
 
@@ -729,14 +711,14 @@ export default function TelegramDashboardPage() {
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
               <span>
-                You have reached the maximum trial limit (10/10 test calls) via our system proxy. To continue sending unlimited messages, you must deploy your own dedicated worker.
+                {t("telegram.trialLimitWarning")}
               </span>
             </div>
             <Link
               href="/dashboard/cloudflare"
               className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-xs whitespace-nowrap transition-colors"
             >
-              Deploy Worker in Cloudflare →
+              {t("telegram.deployWorkerLink")}
             </Link>
           </div>
         )}
@@ -746,14 +728,14 @@ export default function TelegramDashboardPage() {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
               <span>
-                Temporary System Proxy Mode: <strong>{remainingTrialCalls} of 10</strong> trial test calls remaining.
+                {t("telegram.tempProxyNotice").replace("{remaining}", String(remainingTrialCalls))}
               </span>
             </div>
             <Link
               href="/dashboard/cloudflare"
               className="text-amber-400 hover:text-amber-300 underline font-medium text-[11px] whitespace-nowrap"
             >
-              Deploy Worker for Unlimited Sends →
+              {t("telegram.deployWorkerUnlimitedLink")}
             </Link>
           </div>
         )}
@@ -762,7 +744,7 @@ export default function TelegramDashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Sender Bot
+                {t("telegram.senderBotLabel")}
               </label>
               <select
                 value={testBotId}
@@ -779,30 +761,31 @@ export default function TelegramDashboardPage() {
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Target Chat ID
+                {t("telegram.targetChatIdLabel")}
               </label>
               <input
                 type="text"
                 required
+                dir="ltr"
                 value={testChatId}
                 onChange={(e) => setTestChatId(e.target.value)}
                 placeholder="e.g. -1001987654321"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Formatting (Parse Mode)
+                {t("telegram.formattingLabel")}
               </label>
               <select
                 value={parseMode}
                 onChange={(e) => handleParseModeChange(e.target.value as "HTML" | "MarkdownV2" | "")}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
-                <option value="HTML">HTML (Recommended for Objects)</option>
-                <option value="MarkdownV2">MarkdownV2 (Full Escaped Object)</option>
-                <option value="">Plain Text (Raw Object)</option>
+                <option value="HTML">{t("telegram.htmlMode")}</option>
+                <option value="MarkdownV2">{t("telegram.markdownMode")}</option>
+                <option value="">{t("telegram.plainMode")}</option>
               </select>
             </div>
           </div>
@@ -812,10 +795,10 @@ export default function TelegramDashboardPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
                 <FileCode className="w-3.5 h-3.5 text-purple-400" />
-                Select Structured Object Payload Example:
+                {t("telegram.presetSelectorTitle")}
               </span>
               <span className="text-[11px] text-slate-500 font-mono">
-                Format: {parseMode || "Plain Text"}
+                {t("telegram.formatLabel")} {parseMode || "Plain Text"}
               </span>
             </div>
 
@@ -837,8 +820,8 @@ export default function TelegramDashboardPage() {
                   >
                     <IconComponent className={`w-4 h-4 shrink-0 ${isSelected ? "text-purple-400" : "text-slate-500"}`} />
                     <div className="truncate">
-                      <div className="font-semibold text-slate-200">{item.label}</div>
-                      <div className="text-[10px] text-slate-400">{item.badge}</div>
+                      <div className="font-semibold text-slate-200">{t(item.labelKey)}</div>
+                      <div className="text-[10px] text-slate-400">{t(item.badgeKey)}</div>
                     </div>
                   </button>
                 );
@@ -851,13 +834,13 @@ export default function TelegramDashboardPage() {
                 <div className="text-[11px] font-medium text-slate-400 mb-2 flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-blue-400 font-semibold">
                     <Bookmark className="w-3.5 h-3.5" />
-                    Load from My Saved Templates:
+                    {t("telegram.loadSavedTemplates")}
                   </span>
                   <Link
                     href="/dashboard/templates"
                     className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
                   >
-                    + Manage Templates
+                    {t("telegram.manageTemplatesLink")}
                   </Link>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -878,39 +861,23 @@ export default function TelegramDashboardPage() {
                 </div>
               </div>
             )}
-
-            {/* Parse Mode Specific Architecture Advice */}
-            <div className="mt-2 pt-2 border-t border-slate-800/60 text-[11px]">
-              {parseMode === "MarkdownV2" && (
-                <p className="text-purple-300/90 leading-relaxed">
-                  <strong className="text-purple-400">MarkdownV2 Object Format:</strong> Special characters outside code blocks (<code className="text-amber-400 font-mono">. - ! # ( ) [ ] _ * ~ ` &gt; + = | &#123; &#125;</code>) are escaped with a backslash (<code className="text-amber-400 font-mono">\.</code>), while JSON inside <code className="text-amber-400 font-mono">```json ... ```</code> remains clean and syntax-highlighted in Telegram.
-                </p>
-              )}
-              {parseMode === "HTML" && (
-                <p className="text-emerald-300/90 leading-relaxed">
-                  <strong className="text-emerald-400">HTML Object Format:</strong> Uses standard <code className="text-emerald-400 font-mono">&lt;pre&gt;&lt;code class=&quot;language-json&quot;&gt;...&lt;/code&gt;&lt;/pre&gt;</code> for syntax-colored JSON blocks, with <code className="text-emerald-400 font-mono">&lt;b&gt;</code> labels and <code className="text-emerald-400 font-mono">&lt;code&gt;</code> inline tags.
-                </p>
-              )}
-              {parseMode === "" && (
-                <p className="text-slate-400 leading-relaxed">
-                  <strong className="text-slate-300">Plain Text Object Format:</strong> Pure text with indented JSON payload, without any markup tags or entity escaping requirements.
-                </p>
-              )}
-            </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-medium text-slate-300">
-                Message Content ({parseMode || "Plain Text"} Payload)
+                {t("telegram.messageContentLabel").replace("{mode}", parseMode || "Plain Text")}
               </label>
               <span className="text-[11px] text-slate-500 font-mono">
-                {testText.length} characters / {testText.split("\n").length} lines
+                {t("telegram.charsLines")
+                  .replace("{chars}", String(testText.length))
+                  .replace("{lines}", String(testText.split("\n").length))}
               </span>
             </div>
             <textarea
               rows={11}
               required
+              dir="ltr"
               value={testText}
               onChange={(e) => setTestText(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-inner"
@@ -923,18 +890,20 @@ export default function TelegramDashboardPage() {
             className="py-2.5 px-6 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center gap-2 shadow-lg shadow-purple-600/20"
           >
             {isSendingTest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            {trialLimitReached ? "Trial Limit Reached (Deploy Worker)" : "Dispatch Live Notification"}
+            <span>
+              {trialLimitReached ? t("telegram.dispatchBtnDisabled") : t("telegram.dispatchBtn")}
+            </span>
           </button>
         </form>
       </div>
 
       {/* Bots & Linked Channels Directory */}
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-        <h2 className="text-lg font-semibold text-white mb-4">Registered Bots & Channels</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">{t("telegram.registeredBotsTitle")}</h2>
 
         {bots.length === 0 ? (
           <p className="text-sm text-slate-500 py-6 text-center">
-            No bots registered yet. Add your bot token above to get started.
+            {t("telegram.noBots")}
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -943,28 +912,30 @@ export default function TelegramDashboardPage() {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="font-semibold text-white">{bot.botName}</h3>
-                    <p className="text-xs text-blue-400">@{bot.botUsername}</p>
+                    <p className="text-xs text-blue-400 font-mono" dir="ltr">@{bot.botUsername}</p>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    Active
+                    {t("telegram.activeStatus")}
                   </span>
                 </div>
 
                 <div className="border-t border-slate-800/80 pt-3">
                   <span className="text-xs font-medium text-slate-400 block mb-2">
-                    Linked Channels ({bot.channels?.length || 0}):
+                    {t("telegram.linkedChannels").replace("{count}", String(bot.channels?.length || 0))}
                   </span>
                   {bot.channels && bot.channels.length > 0 ? (
                     <ul className="space-y-1.5 text-xs">
                       {bot.channels.map((c) => (
                         <li key={c.id} className="flex items-center justify-between text-slate-300">
                           <span>{c.title}</span>
-                          <span className="font-mono text-slate-500">{c.chatId}</span>
+                          <span className="font-mono text-slate-500" dir="ltr">{c.chatId}</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <span className="text-xs text-slate-600 italic">No channels linked yet</span>
+                    <span className="text-xs text-slate-600 italic">
+                      {t("telegram.noChannelsLinked")}
+                    </span>
                   )}
                 </div>
               </div>

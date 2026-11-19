@@ -2,21 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import {
-  Cloud,
   CheckCircle2,
   AlertCircle,
   Copy,
   Loader2,
   ExternalLink,
   Zap,
-  Key,
   Trash2,
 } from "lucide-react";
 
 export default function CloudflareDashboardPage() {
   const { user, refreshUser } = useAuth();
+  const { t, isRtl } = useI18n();
 
   // Cloudflare credentials form
   const [accountId, setAccountId] = useState("");
@@ -47,12 +47,9 @@ export default function CloudflareDashboardPage() {
     }
   };
 
-  const handleDeleteDeployment = async (id: string, scriptName: string) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete worker '${scriptName}'? This will remove it from your Cloudflare account and switch your account back to fallback mode.`
-      )
-    ) {
+  const handleDeleteDeployment = async (id: string, scriptNameStr: string) => {
+    const confirmMsg = t("cloudflare.confirmDelete").replace("{name}", scriptNameStr);
+    if (!confirm(confirmMsg)) {
       return;
     }
 
@@ -86,7 +83,7 @@ export default function CloudflareDashboardPage() {
 
     try {
       await api.cloudflare.saveConfig({ accountId, apiToken });
-      setConfigSuccess("Cloudflare credentials verified and securely saved.");
+      setConfigSuccess(t("cloudflare.configSuccess"));
       setApiToken("");
       await refreshUser();
     } catch (err: any) {
@@ -128,9 +125,9 @@ export default function CloudflareDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Cloudflare Workers</h1>
+        <h1 className="text-3xl font-bold text-white tracking-tight">{t("cloudflare.title")}</h1>
         <p className="text-slate-400 mt-1">
-          Connect your Cloudflare account and deploy custom notification proxy workers on edge.
+          {t("cloudflare.subtitle")}
         </p>
       </div>
 
@@ -142,52 +139,60 @@ export default function CloudflareDashboardPage() {
               1
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Connect Cloudflare Account</h2>
-              <p className="text-xs text-slate-400">Provide Account ID and Custom API Token</p>
+              <h2 className="text-lg font-semibold text-white">{t("cloudflare.step1Title")}</h2>
+              <p className="text-xs text-slate-400">{t("cloudflare.step1Subtitle")}</p>
             </div>
           </div>
 
           {configSuccess && (
             <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> {configSuccess}
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{configSuccess}</span>
             </div>
           )}
 
           {configError && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {configError}
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{configError}</span>
             </div>
           )}
 
           <form onSubmit={handleSaveConfig} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Cloudflare Account ID
+                {t("cloudflare.accountIdLabel")}
               </label>
               <input
                 type="text"
                 required
+                dir="ltr"
                 value={accountId}
                 onChange={(e) => setAccountId(e.target.value)}
-                placeholder="e.g. 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder={t("cloudflare.accountIdPlaceholder")}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Cloudflare API Token
+                {t("cloudflare.apiTokenLabel")}
               </label>
               <input
                 type="password"
                 required={!user?.cloudflareConfig}
+                dir="ltr"
                 value={apiToken}
                 onChange={(e) => setApiToken(e.target.value)}
-                placeholder={user?.cloudflareConfig ? "•••••••••••••••••••••••• (Saved)" : "Custom API Token with Workers:Edit permission"}
+                placeholder={
+                  user?.cloudflareConfig
+                    ? t("cloudflare.apiTokenPlaceholderSaved")
+                    : t("cloudflare.apiTokenPlaceholderNew")
+                }
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
               <p className="text-xs text-slate-500 mt-1">
-                Token requires <span className="text-slate-400">Account: Workers Scripts: Edit</span> permission.
+                {t("cloudflare.tokenPermissionHint")}
               </p>
             </div>
 
@@ -197,9 +202,12 @@ export default function CloudflareDashboardPage() {
               className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
             >
               {isSavingConfig ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{t("cloudflare.saving")}</span>
+                </>
               ) : (
-                "Verify & Save Credentials"
+                <span>{t("cloudflare.verifySaveBtn")}</span>
               )}
             </button>
           </form>
@@ -212,27 +220,29 @@ export default function CloudflareDashboardPage() {
               2
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">1-Click Worker Deployer</h2>
-              <p className="text-xs text-slate-400">Provision isolated worker on your account</p>
+              <h2 className="text-lg font-semibold text-white">{t("cloudflare.step2Title")}</h2>
+              <p className="text-xs text-slate-400">{t("cloudflare.step2Subtitle")}</p>
             </div>
           </div>
 
           {deploySuccess && (
             <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> {deploySuccess}
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{deploySuccess}</span>
             </div>
           )}
 
           {deployError && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {deployError}
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{deployError}</span>
             </div>
           )}
 
           <form onSubmit={handleDeployWorker} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Select Telegram Bot
+                {t("cloudflare.selectBot")}
               </label>
               {user?.telegramBots && user.telegramBots.length > 0 ? (
                 <select
@@ -248,34 +258,36 @@ export default function CloudflareDashboardPage() {
                 </select>
               ) : (
                 <p className="text-xs text-amber-400 py-1">
-                  No bots registered. Please add a bot in the Telegram section first.
+                  {t("cloudflare.noBotsRegistered")}
                 </p>
               )}
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Default Channel Chat ID (Optional)
+                {t("cloudflare.defaultChatIdLabel")}
               </label>
               <input
                 type="text"
+                dir="ltr"
                 value={defaultChatId}
                 onChange={(e) => setDefaultChatId(e.target.value)}
-                placeholder="e.g. -100123456789 or @mychannel"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder={t("cloudflare.defaultChatIdPlaceholder")}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Worker Script Name (Optional)
+                {t("cloudflare.scriptNameLabel")}
               </label>
               <input
                 type="text"
+                dir="ltr"
                 value={scriptName}
                 onChange={(e) => setScriptName(e.target.value)}
-                placeholder="e.g. notify-production"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder={t("cloudflare.scriptNamePlaceholder")}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
 
@@ -285,10 +297,14 @@ export default function CloudflareDashboardPage() {
               className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
             >
               {isDeploying ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{t("cloudflare.deploying")}</span>
+                </>
               ) : (
                 <>
-                  <Zap className="w-4 h-4" /> Deploy to My Cloudflare Account
+                  <Zap className="w-4 h-4" />
+                  <span>{t("cloudflare.deployBtn")}</span>
                 </>
               )}
             </button>
@@ -298,32 +314,34 @@ export default function CloudflareDashboardPage() {
 
       {/* Section 3: Deployed Workers Table */}
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-        <h2 className="text-lg font-semibold text-white mb-4">Deployed Workers</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">{t("cloudflare.deployedWorkersTitle")}</h2>
 
         {deployments.length === 0 ? (
           <p className="text-sm text-slate-500 py-6 text-center">
-            No workers deployed yet. Complete the steps above to launch your first edge worker.
+            {t("cloudflare.noWorkers")}
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className={`w-full text-sm ${isRtl ? "text-right" : "text-left"}`}>
               <thead className="text-xs text-slate-400 uppercase border-b border-slate-800">
                 <tr>
-                  <th className="py-3 px-4">Script Name</th>
-                  <th className="py-3 px-4">Worker Endpoint</th>
-                  <th className="py-3 px-4">API Secret Key</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4">{t("cloudflare.thScriptName")}</th>
+                  <th className="py-3 px-4">{t("cloudflare.thEndpoint")}</th>
+                  <th className="py-3 px-4">{t("cloudflare.thSecretKey")}</th>
+                  <th className="py-3 px-4">{t("cloudflare.thStatus")}</th>
+                  <th className="py-3 px-4">{t("cloudflare.thDate")}</th>
+                  <th className={`py-3 px-4 ${isRtl ? "text-left" : "text-right"}`}>
+                    {t("cloudflare.thActions")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {deployments.map((d) => (
                   <tr key={d.id} className="hover:bg-slate-800/30">
-                    <td className="py-3 px-4 font-mono font-medium text-white">
+                    <td className="py-3 px-4 font-mono font-medium text-white" dir="ltr">
                       {d.scriptName}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4" dir="ltr">
                       <a
                         href={d.workerUrl}
                         target="_blank"
@@ -333,7 +351,7 @@ export default function CloudflareDashboardPage() {
                         {d.workerUrl} <ExternalLink className="w-3 h-3" />
                       </a>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4" dir="ltr">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs text-slate-400 truncate max-w-[140px]">
                           {d.apiSecretKey}
@@ -341,7 +359,7 @@ export default function CloudflareDashboardPage() {
                         <button
                           onClick={() => copyToClipboard(d.apiSecretKey, d.id)}
                           className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
-                          title="Copy API Key"
+                          title={t("cloudflare.copied")}
                         >
                           {copiedKeyId === d.id ? (
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -356,22 +374,22 @@ export default function CloudflareDashboardPage() {
                         {d.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-xs text-slate-500">
+                    <td className="py-3 px-4 text-xs text-slate-500" dir="ltr">
                       {new Date(d.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className={`py-3 px-4 ${isRtl ? "text-left" : "text-right"}`}>
                       <button
                         onClick={() => handleDeleteDeployment(d.id, d.scriptName)}
                         disabled={deletingId === d.id}
                         className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all inline-flex items-center gap-1.5 text-xs font-medium disabled:opacity-50"
-                        title="Delete worker from Cloudflare and system"
+                        title={t("cloudflare.deleteBtn")}
                       >
                         {deletingId === d.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <Trash2 className="w-3.5 h-3.5" />
                         )}
-                        Delete
+                        <span>{t("cloudflare.deleteBtn")}</span>
                       </button>
                     </td>
                   </tr>

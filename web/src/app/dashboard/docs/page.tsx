@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import {
   Copy,
@@ -23,6 +24,7 @@ import {
 
 export default function DocsPage() {
   const { user } = useAuth();
+  const { t, isRtl } = useI18n();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [templates, setTemplates] = useState<any[]>([]);
 
@@ -155,10 +157,10 @@ export default function DocsPage() {
     <div className="space-y-8 max-w-4xl">
       <div>
         <h1 className="text-3xl font-bold text-white tracking-tight">
-          API & Platform Documentation
+          {t("docs.pageTitle")}
         </h1>
         <p className="text-slate-400 mt-1">
-          Complete step-by-step guides and copy-paste cURL examples customized for your Cloudflare Worker domains.
+          {t("docs.pageSubtitle")}
         </p>
       </div>
 
@@ -170,9 +172,9 @@ export default function DocsPage() {
               <Globe className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white">Select Cloudflare Worker Domain</h2>
+              <h2 className="text-base font-semibold text-white">{t("docs.selectDomainTitle")}</h2>
               <p className="text-xs text-slate-400">
-                Choose which registered Cloudflare Worker to generate endpoints and cURLs for
+                {t("docs.selectDomainSubtitle")}
               </p>
             </div>
           </div>
@@ -181,20 +183,20 @@ export default function DocsPage() {
             href="/dashboard/cloudflare"
             className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition-colors"
           >
-            Manage Workers <ExternalLink className="w-3 h-3" />
+            {t("docs.manageWorkersLink")} <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
 
         {deployments.length === 0 ? (
           <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center justify-between gap-3">
             <span>
-              You haven&apos;t deployed any Cloudflare Workers yet. Examples below use sample placeholder values.
+              {t("docs.noWorkersAlert")}
             </span>
             <Link
               href="/dashboard/cloudflare"
               className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs whitespace-nowrap transition-colors"
             >
-              Deploy First Worker →
+              {t("docs.deployFirstWorker")}
             </Link>
           </div>
         ) : (
@@ -214,7 +216,7 @@ export default function DocsPage() {
                     }`}
                   >
                     <Zap className={`w-3.5 h-3.5 ${isSelected ? "text-amber-300" : "text-slate-500"}`} />
-                    <span>{d.scriptName}</span>
+                    <span dir="ltr">{d.scriptName}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded ${
                         isSelected ? "bg-blue-700/60 text-blue-100" : "bg-slate-900 text-slate-500"
@@ -231,26 +233,27 @@ export default function DocsPage() {
             {activeDeployment && (
               <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <span className="text-slate-500 block text-[11px] mb-0.5">Live Edge Endpoint:</span>
+                  <span className="text-slate-500 block text-[11px] mb-0.5">{t("docs.liveEdgeEndpoint")}</span>
                   <a
                     href={workerEndpoint}
                     target="_blank"
                     rel="noreferrer"
+                    dir="ltr"
                     className="text-blue-400 hover:underline font-mono font-medium flex items-center gap-1 truncate"
                   >
                     {workerEndpoint} <ExternalLink className="w-3 h-3 shrink-0" />
                   </a>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[11px] mb-0.5">Authorization API Secret:</span>
+                  <span className="text-slate-500 block text-[11px] mb-0.5">{t("docs.authApiSecret")}</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-slate-300 truncate max-w-[220px]">
+                    <span className="font-mono text-slate-300 truncate max-w-[220px]" dir="ltr">
                       {apiKey}
                     </span>
                     <button
                       onClick={() => copyCode(apiKey, "activeApiKey")}
                       className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition-colors"
-                      title="Copy Secret Key"
+                      title={t("docs.copySecretKey")}
                     >
                       {copiedId === "activeApiKey" ? (
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -275,10 +278,11 @@ export default function DocsPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">
-                Interactive cURL & HTTP Test Suite
+                {t("docs.testSuiteTitle")}
               </h2>
               <p className="text-xs text-slate-400">
-                All snippets below are dynamically bound to: <code className="text-emerald-400 font-mono">{workerEndpoint}</code>
+                {t("docs.testSuiteSubtitle")}{" "}
+                <code className="text-emerald-400 font-mono" dir="ltr">{workerEndpoint}</code>
               </p>
             </div>
           </div>
@@ -294,7 +298,7 @@ export default function DocsPage() {
             title="Download complete bash script containing all curl commands"
           >
             <Download className="w-3.5 h-3.5 text-blue-400" />
-            Download Full Test Suite (.sh)
+            {t("docs.downloadFullSuite")}
           </button>
         </div>
 
