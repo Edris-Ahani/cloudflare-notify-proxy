@@ -661,41 +661,32 @@ export default function DocsPage() {
             <Cloud className="w-4 h-4" />
           </div>
           <h2 className="text-lg font-semibold text-white">
-            1. How to get Cloudflare Account ID & API Token
+            {t("docs.guide1Title")}
           </h2>
         </div>
 
-        <ol className="list-decimal list-inside space-y-2.5 text-sm text-slate-300">
+        <ol className={`list-decimal space-y-2.5 text-sm text-slate-300 ${isRtl ? "pr-5" : "pl-5"}`}>
           <li>
-            Log in to the Cloudflare Dashboard at{" "}
-            <a
-              href="https://dash.cloudflare.com"
-              target="_blank"
-              rel="noreferrer"
-              className="text-blue-400 underline"
-            >
-              dash.cloudflare.com
-            </a>
-            .
+            {t("docs.guide1Step1")}
           </li>
           <li>
-            Go to <strong>Workers & Pages</strong> in the left sidebar. Look at the right sidebar to copy your 32-character <strong>Account ID</strong>.
+            {t("docs.guide1Step2")}
           </li>
           <li>
-            Click your profile icon (top right) ➔ <strong>My Profile</strong> ➔ <strong>API Tokens</strong>.
+            {t("docs.guide1Step3")}
           </li>
           <li>
-            Click <strong>Create Token</strong> ➔ choose <strong>Edit Cloudflare Workers</strong> template (or Custom Token).
+            {t("docs.guide1Step4")}
           </li>
           <li>
-            Configure permissions:
-            <ul className="list-disc list-inside ml-6 mt-1 space-y-1 text-slate-400">
-              <li><code className="text-amber-400">Account</code> ➔ <code className="text-amber-400">Workers Scripts</code> ➔ <code className="text-amber-400">Edit</code></li>
-              <li><code className="text-amber-400">Zone</code> ➔ <code className="text-amber-400">Workers Routes</code> ➔ <code className="text-amber-400">Edit</code></li>
+            {t("docs.guide1Step5")}
+            <ul className={`list-disc mt-1 space-y-1 text-slate-400 ${isRtl ? "pr-5" : "pl-5"}`}>
+              <li><code className="text-amber-400 font-mono">Account</code> ➔ <code className="text-amber-400 font-mono">Workers Scripts</code> ➔ <code className="text-amber-400 font-mono">Edit</code></li>
+              <li><code className="text-amber-400 font-mono">Zone</code> ➔ <code className="text-amber-400 font-mono">Workers Routes</code> ➔ <code className="text-amber-400 font-mono">Edit</code></li>
             </ul>
           </li>
           <li>
-            Paste both into the <strong>Cloudflare Workers</strong> tab in this dashboard and click <strong>Verify & Save Credentials</strong>.
+            {t("docs.guide1Step6")}
           </li>
         </ol>
       </div>
@@ -707,22 +698,22 @@ export default function DocsPage() {
             <Bot className="w-4 h-4" />
           </div>
           <h2 className="text-lg font-semibold text-white">
-            2. Telegram Bot & Channel Linking Guide
+            {t("docs.guide2Title")}
           </h2>
         </div>
 
-        <ol className="list-decimal list-inside space-y-2.5 text-sm text-slate-300">
+        <ol className={`list-decimal space-y-2.5 text-sm text-slate-300 ${isRtl ? "pr-5" : "pl-5"}`}>
           <li>
-            Open Telegram and search for <code className="text-blue-400 font-mono">@BotFather</code>. Send <code className="text-blue-400 font-mono">/newbot</code> and follow instructions to get your token.
+            {t("docs.guide2Step1")}
           </li>
           <li>
-            Add your Bot Token in the <strong>Telegram Bots</strong> tab in this dashboard.
+            {t("docs.guide2Step2")}
           </li>
           <li>
-            Add your bot to your target channel or group as an <strong>Administrator</strong> with &quot;Post Messages&quot; rights.
+            {t("docs.guide2Step3")}
           </li>
           <li>
-            Link the channel in the dashboard using its handle (e.g. <code className="text-emerald-400 font-mono">@mychannel</code>) or numeric ID (e.g. <code className="text-emerald-400 font-mono">-1001234567890</code>).
+            {t("docs.guide2Step4")}
           </li>
         </ol>
       </div>
@@ -734,44 +725,44 @@ export default function DocsPage() {
             <Shield className="w-4 h-4" />
           </div>
           <h2 className="text-lg font-semibold text-white">
-            3. Environment Variables & Security Architecture
+            {t("docs.guide3Title")}
           </h2>
         </div>
 
         <p className="text-xs text-slate-400">
-          All passwords and tokens are isolated in local files and strictly excluded from git version control via <code className="text-amber-400 font-mono">.gitignore</code>.
+          {t("docs.guide3Desc")}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
             <h3 className="font-semibold text-white flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-              Cloudflare Worker (.dev.vars)
+              {t("docs.guide3CfWorker")}
             </h3>
             <p className="text-slate-400">
-              These variables live exclusively on your Cloudflare Worker:
+              {t("docs.guide3CfDesc")}
             </p>
-            <ul className="space-y-1 font-mono text-slate-300">
-              <li><code className="text-amber-400">API_SECRET_KEY</code>: Worker access auth token</li>
-              <li><code className="text-amber-400">TELEGRAM_BOT_TOKEN</code>: Default Telegram bot token</li>
-              <li><code className="text-slate-500">TELEGRAM_DEFAULT_CHAT_ID</code>: Default channel</li>
+            <ul className="space-y-1 font-mono text-slate-300 text-[11px]">
+              <li><code className="text-amber-400">API_SECRET_KEY</code>: {t("docs.guide3CfVar1")}</li>
+              <li><code className="text-amber-400">TELEGRAM_BOT_TOKEN</code>: {t("docs.guide3CfVar2")}</li>
+              <li><code className="text-slate-500">TELEGRAM_DEFAULT_CHAT_ID</code>: {t("docs.guide3CfVar3")}</li>
             </ul>
           </div>
 
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
             <h3 className="font-semibold text-white flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              NestJS Backend (Docker)
+              {t("docs.guide3Nest")}
             </h3>
             <p className="text-slate-400">
-              Configured via Docker environment:
+              {t("docs.guide3NestDesc")}
             </p>
-            <ul className="space-y-1 font-mono text-slate-300">
-              <li><code className="text-emerald-400">DATABASE_URL</code>: PostgreSQL connection string</li>
-              <li><code className="text-emerald-400">JWT_SECRET</code>: Signs login sessions</li>
-              <li><code className="text-emerald-400">ENCRYPTION_KEY</code>: Hardware AES-256-GCM key</li>
-              <li><code className="text-emerald-400">TELEGRAM_PROXY_WORKER_URL</code>: Platform system fallback</li>
-              <li><code className="text-emerald-400">TELEGRAM_PROXY_SECRET</code>: Platform auth token</li>
+            <ul className="space-y-1 font-mono text-slate-300 text-[11px]">
+              <li><code className="text-emerald-400">DATABASE_URL</code>: {t("docs.guide3NestVar1")}</li>
+              <li><code className="text-emerald-400">JWT_SECRET</code>: {t("docs.guide3NestVar2")}</li>
+              <li><code className="text-emerald-400">ENCRYPTION_KEY</code>: {t("docs.guide3NestVar3")}</li>
+              <li><code className="text-emerald-400">TELEGRAM_PROXY_WORKER_URL</code>: {t("docs.guide3NestVar4")}</li>
+              <li><code className="text-emerald-400">TELEGRAM_PROXY_SECRET</code>: {t("docs.guide3NestVar5")}</li>
             </ul>
           </div>
         </div>
@@ -784,7 +775,7 @@ export default function DocsPage() {
             <Server className="w-4 h-4" />
           </div>
           <h2 className="text-lg font-semibold text-white">
-            4. Coolify PaaS & Local Docker Deployment
+            {t("docs.guide4Title")}
           </h2>
         </div>
 
@@ -792,32 +783,32 @@ export default function DocsPage() {
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
             <h3 className="font-semibold text-white text-sm flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              Option A: Production on Coolify (Decoupled Database)
+              {t("docs.guide4OptATitle")}
             </h3>
             <p className="text-slate-400 leading-relaxed">
-              In Coolify, create a standalone <strong>PostgreSQL</strong> service, then deploy this repo with <code className="text-amber-400 font-mono">docker-compose.yml</code>. Backend and frontend automatically join the <code className="text-blue-400 font-mono">coolify</code> external network, allowing direct internal database access without exposing database ports publicly.
+              {t("docs.guide4OptADesc")}
             </p>
-            <div className="p-2.5 rounded-lg bg-slate-900 font-mono text-[11px] text-slate-300">
+            <div className="p-2.5 rounded-lg bg-slate-900 font-mono text-[11px] text-slate-300" dir="ltr">
               DATABASE_URL=postgresql://postgres:pass@&lt;coolify-postgres-host&gt;:5432/postgres?schema=public
             </div>
             <p className="text-[11px] text-slate-500">
-              * On container startup, Prisma automatically executes <code className="text-emerald-400 font-mono">npx prisma migrate deploy</code> with a connection retry loop before booting NestJS.
+              {t("docs.guide4OptANote")}
             </p>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
             <h3 className="font-semibold text-white text-sm flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-              Option B: Local Offline Development (Self-Contained)
+              {t("docs.guide4OptBTitle")}
             </h3>
             <p className="text-slate-400 leading-relaxed">
-              To run the entire stack locally with an embedded PostgreSQL container:
+              {t("docs.guide4OptBDesc")}
             </p>
-            <pre className="p-2.5 rounded-lg bg-slate-900 font-mono text-[11px] text-amber-300 overflow-x-auto">
+            <pre className="p-2.5 rounded-lg bg-slate-900 font-mono text-[11px] text-amber-300 overflow-x-auto" dir="ltr">
               docker compose -f docker-compose.local.yml up -d --build
             </pre>
-            <p className="text-[11px] text-slate-500">
-              Dashboard: http://localhost:15434 | Backend API: http://localhost:15433 | DB: localhost:15432
+            <p className="text-[11px] text-slate-500" dir="ltr">
+              {t("docs.guide4OptBNote")}
             </p>
           </div>
         </div>
