@@ -37,8 +37,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install runtime OpenSSL
-RUN apt-get update -y && apt-get install -y --no-install-recommends openssl \
+# Install runtime OpenSSL and networking diagnostics tools (curl, nc)
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl curl netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only production artifacts from builder
@@ -49,5 +49,5 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 4000
 
-# Apply pending migrations before starting the NestJS application
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# Apply pending migrations with automatic retry before starting the NestJS application
+CMD ["sh", "-c", "until npx prisma migrate deploy; do echo 'Waiting for database to be reachable...'; sleep 2; done && node dist/main.js"]
