@@ -65,11 +65,17 @@ In production on Coolify, the infrastructure is decoupled for reliability, persi
 | `FRONTEND_URL` | `https://notify.yourdomain.com` | Public URL of the frontend dashboard (CORS) |
 | `TELEGRAM_PROXY_WORKER_URL` | `https://your-worker.workers.dev` | (Optional) Fallback proxy worker |
 | `TELEGRAM_PROXY_SECRET` | `your_worker_secret_key` | (Optional) Secret for proxy worker |
+| `TELEGRAM_SYSTEM_BOT_TOKEN` | `123456789:ABCDEF...` | Telegram bot token from @BotFather for onboarding & OTP |
+| `TELEGRAM_SYSTEM_BOT_USERNAME` | `your_bot_username` | Telegram bot username (without @) |
+| `TELEGRAM_ENABLE_POLLING` | `false` | Set to false in production (Coolify uses Webhook) |
 
 6. In Coolify's domain settings:
    - Map your frontend domain (e.g. `notify.ozonecowork.ir`) to the `frontend` container on **Port 3000**.
    - *(Note: Backend does NOT require an external domain; Next.js proxies `/api` directly to backend container over Docker network).*
 7. Click **Deploy**.
+
+> [!TIP]
+> For setting up automatic deployments whenever you push to `main`, see [COOLIFY_AUTODEPLOY.md](file:///c:/Users/Edris/MyProjects/cloudflare-notify/COOLIFY_AUTODEPLOY.md).
 
 ---
 

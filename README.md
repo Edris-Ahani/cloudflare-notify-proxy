@@ -54,7 +54,7 @@ For production deployment on [Coolify](https://coolify.io/):
 3. Set the `DATABASE_URL`, `JWT_SECRET`, `ENCRYPTION_KEY`, and domain URLs in Coolify's Environment Variables.
 4. Services are automatically attached to the internal `coolify` Docker network with automated database migrations on startup.
 
-👉 For detailed, step-by-step Coolify instructions, see the **[Coolify Deployment Guide (COOLIFY.md)](COOLIFY.md)**.
+👉 For detailed, step-by-step Coolify instructions, see the **[Coolify Deployment Guide (COOLIFY.md)](COOLIFY.md)** and the **[Automated Git Push Deployment Guide (COOLIFY_AUTODEPLOY.md)](COOLIFY_AUTODEPLOY.md)**.
 
 ---
 
