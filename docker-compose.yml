@@ -27,8 +27,6 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
     container_name: cf-notify-frontend
     restart: unless-stopped
     depends_on:
@@ -39,7 +37,6 @@ services:
       NODE_ENV: production
       PORT: 3000
       INTERNAL_BACKEND_URL: http://backend:4000
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
     networks:
       - app-network
       - coolify

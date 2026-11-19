@@ -1,6 +1,7 @@
 // API client helper for communicating with the NestJS backend
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+// Base API path proxied directly to NestJS backend via Next.js internal rewrites
+const API_BASE_URL = "/api";
 
 interface RequestOptions extends RequestInit {
   token?: string | null;

@@ -6,9 +6,6 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Accept API base URL during build (baked into the client bundle)
-ARG NEXT_PUBLIC_API_URL=http://localhost:15433
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy dependency manifests first to maximize layer caching

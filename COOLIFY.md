@@ -62,14 +62,13 @@ In production on Coolify, the infrastructure is decoupled for reliability, persi
 | `DATABASE_URL` | `postgresql://postgres:pass@cf-notify-db:5432/postgres?schema=public` | Copied from Step 1 |
 | `JWT_SECRET` | `generate-random-32-char-string-for-sessions` | Signs user JWT auth cookies |
 | `ENCRYPTION_KEY` | `0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef` | 32-byte hex key for user credentials |
-| `NEXT_PUBLIC_API_URL`| `https://api.yourdomain.com` | Public URL of the backend API |
 | `FRONTEND_URL` | `https://notify.yourdomain.com` | Public URL of the frontend dashboard (CORS) |
 | `TELEGRAM_PROXY_WORKER_URL` | `https://your-worker.workers.dev` | (Optional) Fallback proxy worker |
 | `TELEGRAM_PROXY_SECRET` | `your_worker_secret_key` | (Optional) Secret for proxy worker |
 
 6. In Coolify's domain settings:
-   - Map your frontend domain (e.g. `notify.yourdomain.com`) to the `frontend` container (port 3000).
-   - Map your API domain (e.g. `api.yourdomain.com`) to the `backend` container (port 4000).
+   - Map your frontend domain (e.g. `notify.ozonecowork.ir`) to the `frontend` container on **Port 3000**.
+   - *(Note: Backend does NOT require an external domain; Next.js proxies `/api` directly to backend container over Docker network).*
 7. Click **Deploy**.
 
 ---
