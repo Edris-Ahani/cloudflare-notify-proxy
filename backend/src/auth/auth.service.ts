@@ -12,7 +12,11 @@ import { PrismaService } from "../prisma/prisma.service";
 import { TelegramService } from "../telegram/telegram.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { VerifyTelegramOtpDto } from "./dto/telegram-otp.dto";
+import {
+  VerifyTelegramOtpDto,
+  InitiateForgotPasswordDto,
+  ResetPasswordDto,
+} from "./dto/telegram-otp.dto";
 
 // OWASP Argon2id recommended parameters
 const ARGON2_OPTIONS = {
@@ -20,6 +24,14 @@ const ARGON2_OPTIONS = {
   timeCost: 3,       // 3 iterations
   parallelism: 1,    // 1 compute thread
 };
+
+function normalizePhoneNumber(rawPhone: string): string {
+  let digits = String(rawPhone).replace(/\D/g, "");
+  if (digits.startsWith("0098")) digits = digits.slice(4);
+  else if (digits.startsWith("98")) digits = digits.slice(2);
+  else if (digits.startsWith("0")) digits = digits.slice(1);
+  return "0" + digits;
+}
 
 @Injectable()
 export class AuthService {
@@ -269,5 +281,171 @@ export class AuthService {
       },
       accessToken: token,
     };
+  }
+
+  async initiateForgotPassword(dto: InitiateForgotPasswordDto) {
+    const cleanPhone = normalizePhoneNumber(dto.phoneNumber);
+
+    const user = await this.prisma.user.findUnique({
+      where: { phoneNumber: cleanPhone },
+    });
+
+    if (!user) {
+      throw new NotFoundException("No account registered with this phone number");
+    }
+
+    const sessionToken = crypto.randomBytes(16).toString("hex");
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // If user has a linked Telegram chat, send OTP code directly to Telegram
+    if (user.telegramChatId) {
+      const otp = Math.floor(10000 + Math.random() * 90000).toString();
+
+      await this.prisma.telegramOtpSession.create({
+        data: {
+          phoneNumber: cleanPhone,
+          sessionToken,
+          otpCode: otp,
+          telegramChatId: user.telegramChatId,
+          expiresAt,
+        },
+      });
+
+      const resetMsg = [
+        "<b>🔐 Cloudflare Notify Password Reset</b>",
+        "━━━━━━━━━━━━━━━━━━━━━",
+        "A password reset was requested for your account.",
+        "",
+        "Your 5-digit verification code is:",
+        `👉 <code>${otp}</code> 👈`,
+        "<i>(Tap the code above to copy it)</i>",
+        "",
+        "⏱ Valid for 5 minutes.",
+        "⚠️ If you did not request this, please ignore this message.",
+      ].join("\n");
+
+      await this.telegramService.sendSystemBotMessage(user.telegramChatId, resetMsg, "HTML");
+
+      return {
+        sessionToken,
+        hasDirectTelegramSent: true,
+        expiresAt,
+      };
+    }
+
+    // Fallback: If user has no telegramChatId linked yet, initiate deep link authorization
+    await this.prisma.telegramOtpSession.create({
+      data: {
+        phoneNumber: cleanPhone,
+        sessionToken,
+        expiresAt,
+      },
+    });
+
+    const botUsername = await this.telegramService.getSystemBotUsername();
+    const deepLink = `https://t.me/${botUsername}?start=otp_${sessionToken}`;
+
+    return {
+      sessionToken,
+      hasDirectTelegramSent: false,
+      botUsername,
+      deepLink,
+      expiresAt,
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const session = await this.prisma.telegramOtpSession.findUnique({
+      where: { sessionToken: dto.sessionToken },
+    });
+
+    if (!session) {
+      throw new BadRequestException("Invalid or non-existent password reset session");
+    }
+
+    if (session.expiresAt < new Date()) {
+      throw new BadRequestException("Password reset code has expired. Please request a new one.");
+    }
+
+    if (!session.otpCode || dto.otpCode.trim() !== session.otpCode.trim()) {
+      throw new BadRequestException("Invalid verification code. Please check your Telegram message.");
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { phoneNumber: session.phoneNumber },
+    });
+
+    if (!user) {
+      throw new NotFoundException("No account found for this phone number");
+    }
+
+    const passwordHash = await hash(dto.newPassword, ARGON2_OPTIONS);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        telegramChatId: session.telegramChatId || user.telegramChatId,
+      },
+    });
+
+    // Clean up session
+    await this.prisma.telegramOtpSession.delete({
+      where: { id: session.id },
+    }).catch(() => null);
+
+    // Notify user on Telegram
+    const targetChatId = user.telegramChatId || session.telegramChatId;
+    if (targetChatId) {
+      await this.telegramService.sendSystemBotMessage(
+        targetChatId,
+        "<b>🔒 Password Changed Successfully</b>\n\nYour account password has been updated. If you did not make this change, please contact support immediately.",
+        "HTML"
+      );
+    }
+
+    const token = this.generateToken(user.id, user.phoneNumber);
+
+    return {
+      message: "Password reset successful",
+      user: {
+        id: user.id,
+        phoneNumber: user.phoneNumber,
+        telegramChatId: user.telegramChatId,
+        createdAt: user.createdAt,
+      },
+      accessToken: token,
+    };
+  }
+
+  async deleteAccount(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException("User account not found");
+    }
+
+    // Clean up OTP sessions for this user's phone number
+    await this.prisma.telegramOtpSession.deleteMany({
+      where: { phoneNumber: user.phoneNumber },
+    });
+
+    // Notify user on Telegram before removing account
+    if (user.telegramChatId) {
+      await this.telegramService.sendSystemBotMessage(
+        user.telegramChatId,
+        "<b>⚠️ Account Deleted</b>\n\nYour Cloudflare Notify account and all associated resources have been permanently deleted from our system.",
+        "HTML"
+      );
+    }
+
+    // Cascade delete user and all related data (bots, channels, templates, deployments, configs)
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return { message: "Account and all associated data permanently deleted" };
   }
 }

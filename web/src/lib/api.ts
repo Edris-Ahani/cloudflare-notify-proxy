@@ -74,6 +74,20 @@ export const api = {
       verify: (body: { sessionToken: string; otpCode?: string; password?: string }) =>
         fetchApi("/auth/telegram-otp/verify", { method: "POST", body: JSON.stringify(body) }),
     },
+    forgotPassword: {
+      initiate: (body: { phoneNumber: string }): Promise<{
+        sessionToken: string;
+        hasDirectTelegramSent: boolean;
+        botUsername?: string;
+        deepLink?: string;
+        expiresAt: string;
+      }> =>
+        fetchApi("/auth/forgot-password/initiate", { method: "POST", body: JSON.stringify(body) }),
+      verify: (body: { sessionToken: string; otpCode: string; newPassword: string }) =>
+        fetchApi("/auth/forgot-password/verify", { method: "POST", body: JSON.stringify(body) }),
+    },
+    deleteAccount: (token?: string) =>
+      fetchApi("/auth/account", { method: "DELETE", token }),
   },
   cloudflare: {
     saveConfig: (body: { accountId: string; apiToken: string }) =>

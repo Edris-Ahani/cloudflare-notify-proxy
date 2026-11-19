@@ -1,15 +1,42 @@
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
-import { Cloud, Send, FileText, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import {
+  Cloud,
+  Send,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  Trash2,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 
 export default function DashboardOverviewPage() {
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [confirmInput, setConfirmInput] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const hasCloudflare = Boolean(user?.cloudflareConfig);
   const botsCount = user?.telegramBots?.length || 0;
   const workersCount = user?.deployments?.length || 0;
+
+  const handleDeleteAccount = async () => {
+    if (confirmInput !== "DELETE") return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount();
+    } catch (err: any) {
+      setDeleteError(err.message || "Failed to delete account. Please try again.");
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -110,6 +137,100 @@ export default function DashboardOverviewPage() {
           </Link>
         </div>
       </div>
+
+      {/* Danger Zone: Account Deletion */}
+      <div className="p-6 rounded-xl bg-red-950/20 border border-red-900/30">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-base font-semibold text-red-400 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" /> Danger Zone: Delete Account
+            </h3>
+            <p className="text-xs text-slate-400 mt-1 max-w-xl">
+              Permanently delete your user account, stored Cloudflare API credentials, all
+              registered Telegram bots, channels, message templates, and deployment records. This
+              action cannot be undone.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 text-xs font-semibold transition-all flex items-center gap-2 self-start md:self-auto"
+          >
+            <Trash2 className="w-4 h-4" /> Delete Account & Data
+          </button>
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-red-900/50 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-red-400 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Delete Account Permanently</h3>
+                <p className="text-xs text-slate-400">Irreversible Action</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 mb-4 leading-relaxed">
+              Are you absolutely sure? All your data including Cloudflare configurations, Telegram
+              bots, message templates, and authentication sessions will be immediately and
+              permanently purged.
+            </p>
+
+            {deleteError && (
+              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-xs text-slate-400 mb-1.5">
+                Type <span className="font-mono font-bold text-red-400">DELETE</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={confirmInput}
+                onChange={(e) => setConfirmInput(e.target.value)}
+                placeholder="DELETE"
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setConfirmInput("");
+                  setDeleteError(null);
+                }}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={confirmInput !== "DELETE" || isDeleting}
+                onClick={handleDeleteAccount}
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" /> Permanently Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -38,6 +38,7 @@ interface AuthContextType {
   register: (phoneNumber: string, password: string) => Promise<void>;
   setSessionToken: (accessToken: string) => Promise<void>;
   logout: () => void;
+  deleteAccount: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -104,6 +105,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
+  const deleteAccount = async () => {
+    const storedToken = localStorage.getItem("access_token");
+    if (storedToken) {
+      await api.auth.deleteAccount(storedToken);
+    }
+    localStorage.removeItem("access_token");
+    setUser(null);
+    setToken(null);
+    router.push("/register");
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -114,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         setSessionToken,
         logout,
+        deleteAccount,
         refreshUser,
       }}
     >
