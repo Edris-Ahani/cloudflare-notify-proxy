@@ -18,11 +18,43 @@ It can also act as a **Google OAuth intermediary**: your app asks the Worker to 
 
 ## Table of Contents
 
-1. [Step-by-Step Guide (Base Setup)](#step-by-step-guide)
-2. [Google Auth Setup (Step-by-Step)](#google-auth-setup-step-by-step)
-3. [Environment Variables Reference](#environment-variables-reference)
-4. [API Usage (Telegram / Coolify)](#api-usage)
-5. [Google Auth API Usage](#google-auth-api-usage)
+1. [Quickstart: Local & Cloud Deployments](#quickstart-local--cloud-deployments)
+2. [Step-by-Step Guide (Base Setup)](#step-by-step-guide)
+3. [Google Auth Setup (Step-by-Step)](#google-auth-setup-step-by-step)
+4. [Environment Variables Reference](#environment-variables-reference)
+5. [API Usage (Telegram / Coolify)](#api-usage)
+6. [Google Auth API Usage](#google-auth-api-usage)
+
+---
+
+## Quickstart: Local & Cloud Deployments
+
+### Option A: Local Development with Docker (Self-Contained)
+
+Run the entire platform (PostgreSQL, NestJS Backend, Next.js Frontend) locally with one command:
+
+```bash
+# Start all services with automated database migrations
+docker compose -f docker-compose.local.yml up -d --build
+
+# View container logs
+docker compose -f docker-compose.local.yml logs -f
+
+# Access points:
+# - Frontend Dashboard: http://localhost:15434
+# - Backend API:        http://localhost:15433
+# - PostgreSQL:         localhost:15432
+```
+
+### Option B: Production Deployment on Coolify PaaS
+
+For production deployment on [Coolify](https://coolify.io/):
+1. Create a standalone **PostgreSQL** service in Coolify and copy its internal connection URL.
+2. Deploy this repository as a **Docker Compose** service using `docker-compose.yml`.
+3. Set the `DATABASE_URL`, `JWT_SECRET`, `ENCRYPTION_KEY`, and domain URLs in Coolify's Environment Variables.
+4. Services are automatically attached to the internal `coolify` Docker network with automated database migrations on startup.
+
+👉 For detailed, step-by-step Coolify instructions, see the **[Coolify Deployment Guide (COOLIFY.md)](COOLIFY.md)**.
 
 ---
 

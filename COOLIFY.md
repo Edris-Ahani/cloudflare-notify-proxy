@@ -1,122 +1,137 @@
-# Coolify Deployment Webhook via Cloudflare Proxy
+# Coolify Deployment & Infrastructure Guide
 
-This document explains how to use the `cloudflare-notify-proxy` to securely trigger deployments on [Coolify](https://coolify.io/).
-
-## Why use a Proxy for Coolify?
-
-Normally, to trigger a deployment from GitHub Actions or GitLab CI, you need to provide your Coolify webhook URL and your Coolify Bearer Token in your CI/CD secrets. 
-By using this proxy:
-1. **Enhanced Security**: Your Coolify URL and Token remain securely hidden inside your Cloudflare Worker environment.
-2. **Simplified CI/CD**: Your repositories only need to know the Cloudflare Worker URL and a single proxy `API_SECRET_KEY`.
-3. **Centralized Management**: If your Coolify token changes, you only update it once in Cloudflare, instead of updating multiple GitHub/GitLab repositories.
+This guide provides end-to-end instructions for deploying the **Cloudflare Notify** platform on [Coolify](https://coolify.io/), as well as running the stack locally.
 
 ---
 
-## 1. Cloudflare Worker Setup
+## 1. Architecture Overview on Coolify
 
-First, configure your Coolify credentials in your Cloudflare Worker environment. 
+In production on Coolify, the infrastructure is decoupled for reliability, persistent storage, and zero-downtime upgrades:
 
-You can set these via the Cloudflare Dashboard (`Workers & Pages` > `Settings` > `Variables`) or by using the `wrangler` CLI.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       Coolify Host                          │
+│                                                             │
+│  ┌───────────────────────┐       ┌───────────────────────┐  │
+│  │  Managed PostgreSQL   │       │   Traefik Ingress     │  │
+│  │  (Standalone Service) │       │   (Reverse Proxy)     │  │
+│  └──────────┬────────────┘       └───────────┬───────────┘  │
+│             │                                │              │
+│ ════════════╪═════════ coolify network ══════╪═════════════ │
+│             │                                │              │
+│  ┌──────────▼────────────┐       ┌───────────▼───────────┐  │
+│  │   NestJS Backend      │◄─────►│    Next.js Frontend   │  │
+│  │   (Port 4000)         │       │    (Port 3000)        │  │
+│  └───────────────────────┴───────┴───────────────────────┘  │
+│               app-network (internal bridge)                 │
+└─────────────────────────────────────────────────────────────┘
+```
 
-Required Environment Variables:
-- `COOLIFY_WEBHOOK`: The exact webhook URL from Coolify (e.g., `https://coolify.yourdomain.com/api/v1/deploy?uuid=...`)
-- `COOLIFY_TOKEN`: Your Coolify API Bearer Token.
-- `API_SECRET_KEY`: The authorization key for your proxy (used in the CI/CD).
-
-### Handling Multiple Projects
-
-If you have multiple Coolify projects, you don't need to change the Worker code. Instead, use **Dynamic Routing**.
-Add environment variables using the `COOLIFY_WEBHOOK_URL_<PROJECT>` and `COOLIFY_TOKEN_<PROJECT>` naming convention:
-
-- `COOLIFY_WEBHOOK_URL_API` = `https://.../deploy?uuid=abc`
-- `COOLIFY_TOKEN_API` = `token_for_api`
-- `COOLIFY_WEBHOOK_URL_FRONTEND` = `https://.../deploy?uuid=xyz`
-- `COOLIFY_TOKEN_FRONTEND` = `token_for_frontend`
-
-Then, you can trigger these specific deployments by adding the project name to the URL, e.g., `/send/coolify/api` or `/send/coolify/frontend`.
+1. **PostgreSQL Database:** Deployed as an independent, standalone Coolify database service. It is attached to the default `coolify` Docker network.
+2. **Backend & Frontend Stack:** Deployed via `docker-compose.yml`. Both services are multi-homed on `app-network` (inter-service communication) and the external `coolify` network (direct internal access to PostgreSQL without exposing ports to the public internet).
+3. **Automated Migrations:** On container startup, the backend automatically runs `npx prisma migrate deploy` with a resilient retry loop until PostgreSQL accepts connections, ensuring clean database synchronization before NestJS initializes.
 
 ---
 
-## 2. Triggering Deployments
+## 2. Step-by-Step Coolify Deployment
 
-To trigger a deployment, send a `GET` or `POST` request to your Cloudflare Worker's `/send/coolify` endpoint (or `/send/coolify/<PROJECT_NAME>`).
+### Step 1: Deploy Standalone PostgreSQL in Coolify
 
-### Example: GitHub Actions
+1. Open your Coolify Dashboard and navigate to your Project / Environment.
+2. Click **+ New Resource** ➔ **Databases** ➔ **PostgreSQL**.
+3. Choose a name (e.g. `cf-notify-db`).
+4. Click **Start Database**.
+5. Once running, go to the database **Configuration** tab and copy the **Internal Database URL**:
+   ```
+   postgresql://postgres:<password>@<container-name-or-uuid>:5432/postgres?schema=public
+   ```
+   *(Note: This internal URL is accessible only within the `coolify` Docker network, keeping your data secure).*
 
-In your `.github/workflows/deploy.yml`:
+---
 
-```yaml
-name: Trigger Coolify Deploy
+### Step 2: Deploy the Application via Docker Compose
 
-on:
-  push:
-    branches: ["main"]
-  workflow_dispatch:
+1. In Coolify, click **+ New Resource** ➔ **Git Repository** (or **Docker Compose**).
+2. Point it to this repository (`https://github.com/your-username/cloudflare-notify`).
+3. Select the `main` branch.
+4. Coolify will detect `docker-compose.yml`.
+5. Under **Environment Variables**, configure the following keys:
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Call Coolify Webhook via Proxy
-        run: |
-          echo "Triggering deployment via Cloudflare Worker..."
-          curl --request GET "https://<YOUR_WORKER_URL>.workers.dev/send/coolify" \
-               --header "Authorization: Bearer ${{ secrets.PROXY_API_SECRET_KEY }}" \
-               --header "Accept: application/json"
-          echo -e "\nDeployment request sent successfully!"
-```
-*(Make sure to add `PROXY_API_SECRET_KEY` to your GitHub Repository Secrets).*
+| Environment Variable | Example Value | Description |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `postgresql://postgres:pass@cf-notify-db:5432/postgres?schema=public` | Copied from Step 1 |
+| `JWT_SECRET` | `generate-random-32-char-string-for-sessions` | Signs user JWT auth cookies |
+| `ENCRYPTION_KEY` | `0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef` | 32-byte hex key for user credentials |
+| `NEXT_PUBLIC_API_URL`| `https://api.yourdomain.com` | Public URL of the backend API |
+| `FRONTEND_URL` | `https://notify.yourdomain.com` | Public URL of the frontend dashboard (CORS) |
+| `TELEGRAM_PROXY_WORKER_URL` | `https://your-worker.workers.dev` | (Optional) Fallback proxy worker |
+| `TELEGRAM_PROXY_SECRET` | `your_worker_secret_key` | (Optional) Secret for proxy worker |
 
-### Example: GitLab CI
+6. In Coolify's domain settings:
+   - Map your frontend domain (e.g. `notify.yourdomain.com`) to the `frontend` container (port 3000).
+   - Map your API domain (e.g. `api.yourdomain.com`) to the `backend` container (port 4000).
+7. Click **Deploy**.
 
-In your `.gitlab-ci.yml`:
+---
 
-```yaml
-stages:
-  - deploy
+### Step 3: Verification & Network Health Check
 
-deploy_to_coolify:
-  stage: deploy
-  script:
-    - echo "Triggering deployment via Cloudflare Worker..."
-    - >
-      curl --request GET "https://<YOUR_WORKER_URL>.workers.dev/send/coolify"
-      --header "Authorization: Bearer $PROXY_API_SECRET_KEY"
-      --header "Accept: application/json"
-  only:
-    - main
-```
-*(Make sure to add `PROXY_API_SECRET_KEY` to your GitLab CI/CD Variables).*
+1. In the Coolify deployment logs, verify that Prisma executed migrations cleanly:
+   ```text
+   Prisma schema loaded from prisma/schema.prisma
+   Datasource "db": PostgreSQL database
+   Applying migration `...`
+   The following migration(s) have been applied!
+   Backend server successfully started on port 4000
+   ```
+2. If you ever need to test network reachability to PostgreSQL from the backend container, open the **Terminal** tab for the backend container in Coolify and run:
+   ```bash
+   nc -zv <db-container-name> 5432
+   ```
+   You should see `open`.
 
-### Example: Manual cURL
+---
 
-You can also trigger it manually from your terminal:
+## 3. Local Offline Development
+
+To run the entire stack locally on your computer with a self-contained PostgreSQL instance:
 
 ```bash
-curl --request GET "https://<YOUR_WORKER_URL>.workers.dev/send/coolify" \
-     --header "Authorization: Bearer YOUR_API_SECRET_KEY" \
-     --header "Accept: application/json"
+# Start all 3 containers (PostgreSQL, NestJS Backend, Next.js Frontend)
+docker compose -f docker-compose.local.yml up -d --build
+
+# View container status
+docker compose -f docker-compose.local.yml ps
+
+# Check logs
+docker compose -f docker-compose.local.yml logs -f backend
+
+# Stop the stack
+docker compose -f docker-compose.local.yml down
 ```
+
+Access locally at:
+- **Frontend Dashboard:** [http://localhost:15434](http://localhost:15434)
+- **Backend API:** [http://localhost:15433](http://localhost:15433)
+- **PostgreSQL Database:** `localhost:15432` (user: `postgres`, password: `postgres`)
 
 ---
 
-## Response 
+## 4. Triggering Coolify Deployments via Cloudflare Proxy (Optional)
 
-The proxy will return the exact response received from the Coolify server. 
+This platform also includes support for triggering Coolify webhooks through your Cloudflare Worker proxy (`/send/coolify`).
 
-**Success Response (HTTP 200)**:
-```json
-{
-  "httpStatus": 200,
-  "message": "Deployment started successfully"
-}
-```
+### Why use a Proxy for Coolify?
+1. **Enhanced Security**: Your Coolify URL and Token remain securely hidden inside your Cloudflare Worker environment.
+2. **Simplified CI/CD**: Your repositories only need to know the Cloudflare Worker URL and a single proxy `API_SECRET_KEY`.
+3. **Centralized Management**: If your Coolify token changes, update it once in Cloudflare instead of multiple GitHub/GitLab repositories.
 
-**Error Response**:
-If the Coolify configuration is missing in the Cloudflare Worker, you will receive an HTTP 500:
-```json
-{
-  "ok": false,
-  "error": "Coolify webhook URL or token is not configured"
-}
-```
+### Environment Variables on Worker:
+- `COOLIFY_WEBHOOK`: The exact webhook URL from Coolify (e.g., `https://coolify.yourdomain.com/api/v1/deploy?uuid=...`)
+- `COOLIFY_TOKEN`: Your Coolify API Bearer Token.
+- `API_SECRET_KEY`: The authorization key for your proxy.
+
+### Dynamic Multi-Project Routing:
+Define project pairs:
+- `COOLIFY_WEBHOOK_URL_API` / `COOLIFY_TOKEN_API` ➔ `/send/coolify/api`
+- `COOLIFY_WEBHOOK_URL_FRONTEND` / `COOLIFY_TOKEN_FRONTEND` ➔ `/send/coolify/frontend`

@@ -18,6 +18,7 @@ import {
   Radio,
   FileCode,
   Sparkles,
+  Server,
 } from "lucide-react";
 
 export default function DocsPage() {
@@ -768,6 +769,52 @@ export default function DocsPage() {
               <li><code className="text-emerald-400">TELEGRAM_PROXY_WORKER_URL</code>: Platform system fallback</li>
               <li><code className="text-emerald-400">TELEGRAM_PROXY_SECRET</code>: Platform auth token</li>
             </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Guide Section 4: Coolify & Local Deployment Architecture */}
+      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <Server className="w-4 h-4" />
+          </div>
+          <h2 className="text-lg font-semibold text-white">
+            4. Coolify PaaS & Local Docker Deployment
+          </h2>
+        </div>
+
+        <div className="space-y-4 text-xs text-slate-300">
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <h3 className="font-semibold text-white text-sm flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Option A: Production on Coolify (Decoupled Database)
+            </h3>
+            <p className="text-slate-400 leading-relaxed">
+              In Coolify, create a standalone <strong>PostgreSQL</strong> service, then deploy this repo with <code className="text-amber-400 font-mono">docker-compose.yml</code>. Backend and frontend automatically join the <code className="text-blue-400 font-mono">coolify</code> external network, allowing direct internal database access without exposing database ports publicly.
+            </p>
+            <div className="p-2.5 rounded-lg bg-slate-900 font-mono text-[11px] text-slate-300">
+              DATABASE_URL=postgresql://postgres:pass@&lt;coolify-postgres-host&gt;:5432/postgres?schema=public
+            </div>
+            <p className="text-[11px] text-slate-500">
+              * On container startup, Prisma automatically executes <code className="text-emerald-400 font-mono">npx prisma migrate deploy</code> with a connection retry loop before booting NestJS.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <h3 className="font-semibold text-white text-sm flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+              Option B: Local Offline Development (Self-Contained)
+            </h3>
+            <p className="text-slate-400 leading-relaxed">
+              To run the entire stack locally with an embedded PostgreSQL container:
+            </p>
+            <pre className="p-2.5 rounded-lg bg-slate-900 font-mono text-[11px] text-amber-300 overflow-x-auto">
+              docker compose -f docker-compose.local.yml up -d --build
+            </pre>
+            <p className="text-[11px] text-slate-500">
+              Dashboard: http://localhost:15434 | Backend API: http://localhost:15433 | DB: localhost:15432
+            </p>
           </div>
         </div>
       </div>
