@@ -6,6 +6,15 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  async rewrites() {
+    const backendUrl = process.env.INTERNAL_BACKEND_URL || "http://backend:4000";
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backendUrl}/:path*`,
+      },
+    ];
+  },
   turbopack: {
     root: path.resolve(__dirname),
     rules: {

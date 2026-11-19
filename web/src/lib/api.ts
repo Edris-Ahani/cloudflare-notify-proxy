@@ -1,6 +1,6 @@
 // API client helper for communicating with the NestJS backend
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:15433";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 interface RequestOptions extends RequestInit {
   token?: string | null;

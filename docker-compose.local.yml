@@ -45,13 +45,13 @@ services:
     networks:
       - app-network
 
-  # 3. Next.js Frontend Dashboard Service
+  # 3. Next.js Frontend Dashboard Service (Proxies /api directly to internal NestJS backend)
   frontend:
     build:
       context: ./web
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:15433}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
     container_name: cf-notify-frontend
     restart: unless-stopped
     depends_on:
@@ -61,7 +61,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:15433}
+      INTERNAL_BACKEND_URL: http://backend:4000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
     networks:
       - app-network
 
