@@ -11,6 +11,11 @@ import { CryptoService } from "../common/crypto/crypto.service";
 import { AddTelegramBotDto } from "./dto/add-bot.dto";
 import { AddChannelDto } from "./dto/add-channel.dto";
 import { SendTestMessageDto } from "./dto/send-test.dto";
+import {
+  getWelcomeMessage,
+  getOtpMessage,
+  getPhoneVerifiedMessage,
+} from "./telegram-messages";
 
 interface TelegramGetMeResult {
   ok: boolean;
@@ -214,10 +219,19 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const text = String(msg.text || "").trim();
     const contact = msg.contact;
 
-    // 1. Handle /start with session token: /start otp_<sessionToken>
+    // 1. Handle /start with session token: /start otp_<sessionToken>[_<lang>]
     if (text.startsWith("/start")) {
       const tokenPart = text.replace("/start", "").trim();
-      const sessionToken = tokenPart.replace(/^otp_/, "").trim();
+      let sessionToken = tokenPart.replace(/^otp_/, "").trim();
+      let lang = msg.from?.language_code?.toLowerCase().startsWith("fa") ? "fa" : "en";
+
+      if (sessionToken.endsWith("_fa")) {
+        lang = "fa";
+        sessionToken = sessionToken.slice(0, -3);
+      } else if (sessionToken.endsWith("_en")) {
+        lang = "en";
+        sessionToken = sessionToken.slice(0, -3);
+      }
 
       if (sessionToken) {
         const session = await this.prisma.telegramOtpSession.findFirst({
@@ -240,18 +254,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           });
 
           const firstName = escapeHtml(msg.from?.first_name || "User");
-          const otpMsg = [
-            "<b>🔐 Cloudflare Notify Verification</b>",
-            "━━━━━━━━━━━━━━━━━━━━━",
-            `Hello <b>${firstName}</b> 👋`,
-            "",
-            "Your 5-digit verification code is:",
-            `👉 <code>${otp}</code> 👈`,
-            "<i>(Tap the code above to copy it)</i>",
-            "",
-            "⏱ Valid for 5 minutes.",
-            "⚠️ Never share this security code with anyone.",
-          ].join("\n");
+          const otpMsg = getOtpMessage(otp, firstName, lang);
 
           await this.sendSystemBotMessage(chatId, otpMsg, "HTML");
           return true;
@@ -259,18 +262,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
 
       // Default greeting if /start has no token
-      const welcomeMsg = [
-        "<b>👋 Welcome to Cloudflare Notify Bot</b>",
-        "━━━━━━━━━━━━━━━━━━━━━",
-        "To receive your verification code:",
-        "",
-        "1️⃣ Tap <b>📱 Share Phone Number</b> below, or",
-        "2️⃣ Type your 11-digit mobile number here (e.g., <code>09307634831</code>).",
-      ].join("\n");
+      const welcome = getWelcomeMessage(lang);
 
-      await this.sendSystemBotMessage(chatId, welcomeMsg, "HTML", {
+      await this.sendSystemBotMessage(chatId, welcome.text, "HTML", {
         keyboard: [
-          [{ text: "📱 Share Phone Number", request_contact: true }],
+          [{ text: welcome.buttonText, request_contact: true }],
         ],
         resize_keyboard: true,
         one_time_keyboard: true,
@@ -281,6 +277,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     // 2. Handle Contact Sharing
     if (contact && contact.phone_number) {
       const contactPhone = normalizeIranianPhone(contact.phone_number);
+      const lang = msg.from?.language_code?.toLowerCase().startsWith("fa") ? "fa" : "en";
 
       const session = await this.prisma.telegramOtpSession.findFirst({
         where: { phoneNumber: contactPhone },
@@ -303,17 +300,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         });
 
         const firstName = escapeHtml(msg.from?.first_name || "User");
-        const otpMsg = [
-          "<b>✅ Phone Number Verified!</b>",
-          "━━━━━━━━━━━━━━━━━━━━━",
-          `Hello <b>${firstName}</b> 👋`,
-          "",
-          "Your 5-digit verification code is:",
-          `👉 <code>${otp}</code> 👈`,
-          "<i>(Tap the code above to copy it)</i>",
-          "",
-          "You can now return to the website to complete your registration.",
-        ].join("\n");
+        const otpMsg = getPhoneVerifiedMessage(otp, firstName, lang);
 
         await this.sendSystemBotMessage(chatId, otpMsg, "HTML");
         return true;
@@ -324,6 +311,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const rawDigits = text.replace(/\D/g, "");
     if (rawDigits.length >= 10 && rawDigits.length <= 13) {
       const cleanPhone = normalizeIranianPhone(text);
+      const lang = msg.from?.language_code?.toLowerCase().startsWith("fa") ? "fa" : "en";
 
       const session = await this.prisma.telegramOtpSession.findFirst({
         where: { phoneNumber: cleanPhone },
@@ -345,18 +333,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         });
 
         const firstName = escapeHtml(msg.from?.first_name || "User");
-        const otpMsg = [
-          "<b>🔐 Cloudflare Notify Verification</b>",
-          "━━━━━━━━━━━━━━━━━━━━━",
-          `Hello <b>${firstName}</b> 👋`,
-          "",
-          "Your 5-digit verification code is:",
-          `👉 <code>${otp}</code> 👈`,
-          "<i>(Tap the code above to copy it)</i>",
-          "",
-          "⏱ Valid for 5 minutes.",
-          "⚠️ Never share this security code with anyone.",
-        ].join("\n");
+        const otpMsg = getOtpMessage(otp, firstName, lang);
 
         await this.sendSystemBotMessage(chatId, otpMsg, "HTML");
         return true;

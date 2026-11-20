@@ -41,11 +41,12 @@ function escapeMd(s = "") {
 }
 
 async function sendTelegramMessage(env, payload) {
+  const isFa = payload.lang === "fa" || env.DEFAULT_LANG === "fa";
   const {
     text,
     chat_id,
     fields,
-    title = "Notification",
+    title = isFa ? "اعلان سیستمی" : "Notification",
     parse_mode,
     disable_web_page_preview,
     ...extra

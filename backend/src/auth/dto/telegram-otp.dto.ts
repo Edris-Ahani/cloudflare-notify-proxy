@@ -7,6 +7,10 @@ export class InitiateTelegramOtpDto {
     message: "Phone number must be a valid Iranian mobile number (e.g., 09123456789 or +989123456789)",
   })
   phoneNumber: string;
+
+  @IsOptional()
+  @IsString()
+  lang?: string;
 }
 
 export class VerifyTelegramOtpDto {
@@ -31,6 +35,10 @@ export class InitiateForgotPasswordDto {
     message: "Phone number must be a valid Iranian mobile number (e.g., 09123456789 or +989123456789)",
   })
   phoneNumber: string;
+
+  @IsOptional()
+  @IsString()
+  lang?: string;
 }
 
 export class ResetPasswordDto {
@@ -47,4 +55,8 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(8, { message: "New password must be at least 8 characters long" })
   newPassword: string;
+
+  @IsOptional()
+  @IsString()
+  lang?: string;
 }

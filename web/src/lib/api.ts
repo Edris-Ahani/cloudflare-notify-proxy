@@ -61,7 +61,7 @@ export const api = {
       fetchApi("/auth/login", { method: "POST", body: JSON.stringify(body) }),
     me: (token?: string) => fetchApi("/auth/me", { method: "GET", token }),
     telegramOtp: {
-      initiate: (body: { phoneNumber: string }): Promise<{
+      initiate: (body: { phoneNumber: string; lang?: string }): Promise<{
         sessionToken: string;
         botUsername: string;
         deepLink: string;
@@ -82,7 +82,7 @@ export const api = {
         fetchApi("/auth/telegram-otp/verify", { method: "POST", body: JSON.stringify(body) }),
     },
     forgotPassword: {
-      initiate: (body: { phoneNumber: string }): Promise<{
+      initiate: (body: { phoneNumber: string; lang?: string }): Promise<{
         sessionToken: string;
         hasDirectTelegramSent: boolean;
         botUsername?: string;
@@ -90,7 +90,7 @@ export const api = {
         expiresAt: string;
       }> =>
         fetchApi("/auth/forgot-password/initiate", { method: "POST", body: JSON.stringify(body) }),
-      verify: (body: { sessionToken: string; otpCode: string; newPassword: string }) =>
+      verify: (body: { sessionToken: string; otpCode: string; newPassword: string; lang?: string }) =>
         fetchApi("/auth/forgot-password/verify", { method: "POST", body: JSON.stringify(body) }),
     },
     deleteAccount: (token?: string) =>

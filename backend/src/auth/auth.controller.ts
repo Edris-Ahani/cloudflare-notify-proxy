@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -25,6 +26,13 @@ import { JwtAuthGuard } from "./jwt-auth.guard";
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  private resolveLang(dtoLang?: string, xLang?: string, acceptLang?: string): string {
+    if (dtoLang) return dtoLang.toLowerCase().startsWith("fa") ? "fa" : "en";
+    if (xLang) return xLang.toLowerCase().startsWith("fa") ? "fa" : "en";
+    if (acceptLang) return acceptLang.toLowerCase().startsWith("fa") ? "fa" : "en";
+    return "en";
+  }
+
   @Post("register")
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterDto) {
@@ -39,8 +47,13 @@ export class AuthController {
 
   @Post("telegram-otp/initiate")
   @HttpCode(HttpStatus.OK)
-  async initiateTelegramOtp(@Body() dto: InitiateTelegramOtpDto) {
-    return this.authService.initiateTelegramOtp(dto.phoneNumber);
+  async initiateTelegramOtp(
+    @Body() dto: InitiateTelegramOtpDto,
+    @Headers("x-lang") xLang?: string,
+    @Headers("accept-language") acceptLang?: string
+  ) {
+    const lang = this.resolveLang(dto.lang, xLang, acceptLang);
+    return this.authService.initiateTelegramOtp(dto.phoneNumber, lang);
   }
 
   @Get("telegram-otp/status/:token")
@@ -56,14 +69,24 @@ export class AuthController {
 
   @Post("forgot-password/initiate")
   @HttpCode(HttpStatus.OK)
-  async initiateForgotPassword(@Body() dto: InitiateForgotPasswordDto) {
-    return this.authService.initiateForgotPassword(dto);
+  async initiateForgotPassword(
+    @Body() dto: InitiateForgotPasswordDto,
+    @Headers("x-lang") xLang?: string,
+    @Headers("accept-language") acceptLang?: string
+  ) {
+    const lang = this.resolveLang(dto.lang, xLang, acceptLang);
+    return this.authService.initiateForgotPassword(dto, lang);
   }
 
   @Post("forgot-password/verify")
   @HttpCode(HttpStatus.OK)
-  async resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto);
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @Headers("x-lang") xLang?: string,
+    @Headers("accept-language") acceptLang?: string
+  ) {
+    const lang = this.resolveLang(dto.lang, xLang, acceptLang);
+    return this.authService.resetPassword(dto, lang);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -75,7 +98,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Delete("account")
   @HttpCode(HttpStatus.OK)
-  async deleteAccount(@Request() req: { user: { userId: string } }) {
-    return this.authService.deleteAccount(req.user.userId);
+  async deleteAccount(
+    @Request() req: { user: { userId: string } },
+    @Headers("x-lang") xLang?: string,
+    @Headers("accept-language") acceptLang?: string
+  ) {
+    const lang = this.resolveLang(undefined, xLang, acceptLang);
+    return this.authService.deleteAccount(req.user.userId, lang);
   }
 }

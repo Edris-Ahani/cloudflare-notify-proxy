@@ -10,6 +10,11 @@ import { hash, verify } from "@node-rs/argon2";
 import * as crypto from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { TelegramService } from "../telegram/telegram.service";
+import {
+  getPasswordResetMessage,
+  getPasswordChangedMessage,
+  getAccountDeletedMessage,
+} from "../telegram/telegram-messages";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import {
@@ -156,7 +161,7 @@ export class AuthService {
     });
   }
 
-  async initiateTelegramOtp(phoneNumber: string) {
+  async initiateTelegramOtp(phoneNumber: string, lang: string = "en") {
     let cleanPhone = phoneNumber.trim().replace(/\s+/g, "");
     if (cleanPhone.startsWith("+98")) cleanPhone = "0" + cleanPhone.slice(3);
     if (cleanPhone.startsWith("0098")) cleanPhone = "0" + cleanPhone.slice(4);
@@ -181,7 +186,7 @@ export class AuthService {
     });
 
     const botUsername = await this.telegramService.getSystemBotUsername();
-    const deepLink = `https://t.me/${botUsername}?start=otp_${sessionToken}`;
+    const deepLink = `https://t.me/${botUsername}?start=otp_${sessionToken}_${lang}`;
 
     return {
       sessionToken,
@@ -283,7 +288,7 @@ export class AuthService {
     };
   }
 
-  async initiateForgotPassword(dto: InitiateForgotPasswordDto) {
+  async initiateForgotPassword(dto: InitiateForgotPasswordDto, lang: string = "en") {
     const cleanPhone = normalizePhoneNumber(dto.phoneNumber);
 
     const user = await this.prisma.user.findUnique({
@@ -311,19 +316,7 @@ export class AuthService {
         },
       });
 
-      const resetMsg = [
-        "<b>🔐 Cloudflare Notify Password Reset</b>",
-        "━━━━━━━━━━━━━━━━━━━━━",
-        "A password reset was requested for your account.",
-        "",
-        "Your 5-digit verification code is:",
-        `👉 <code>${otp}</code> 👈`,
-        "<i>(Tap the code above to copy it)</i>",
-        "",
-        "⏱ Valid for 5 minutes.",
-        "⚠️ If you did not request this, please ignore this message.",
-      ].join("\n");
-
+      const resetMsg = getPasswordResetMessage(otp, lang);
       await this.telegramService.sendSystemBotMessage(user.telegramChatId, resetMsg, "HTML");
 
       return {
@@ -343,7 +336,7 @@ export class AuthService {
     });
 
     const botUsername = await this.telegramService.getSystemBotUsername();
-    const deepLink = `https://t.me/${botUsername}?start=otp_${sessionToken}`;
+    const deepLink = `https://t.me/${botUsername}?start=otp_${sessionToken}_${lang}`;
 
     return {
       sessionToken,
@@ -354,7 +347,7 @@ export class AuthService {
     };
   }
 
-  async resetPassword(dto: ResetPasswordDto) {
+  async resetPassword(dto: ResetPasswordDto, lang: string = "en") {
     const session = await this.prisma.telegramOtpSession.findUnique({
       where: { sessionToken: dto.sessionToken },
     });
@@ -397,11 +390,8 @@ export class AuthService {
     // Notify user on Telegram
     const targetChatId = user.telegramChatId || session.telegramChatId;
     if (targetChatId) {
-      await this.telegramService.sendSystemBotMessage(
-        targetChatId,
-        "<b>🔒 Password Changed Successfully</b>\n\nYour account password has been updated. If you did not make this change, please contact support immediately.",
-        "HTML"
-      );
+      const changedMsg = getPasswordChangedMessage(lang);
+      await this.telegramService.sendSystemBotMessage(targetChatId, changedMsg, "HTML");
     }
 
     const token = this.generateToken(user.id, user.phoneNumber);
@@ -418,7 +408,7 @@ export class AuthService {
     };
   }
 
-  async deleteAccount(userId: string) {
+  async deleteAccount(userId: string, lang: string = "en") {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -434,11 +424,8 @@ export class AuthService {
 
     // Notify user on Telegram before removing account
     if (user.telegramChatId) {
-      await this.telegramService.sendSystemBotMessage(
-        user.telegramChatId,
-        "<b>⚠️ Account Deleted</b>\n\nYour Cloudflare Notify account and all associated resources have been permanently deleted from our system.",
-        "HTML"
-      );
+      const deletedMsg = getAccountDeletedMessage(lang);
+      await this.telegramService.sendSystemBotMessage(user.telegramChatId, deletedMsg, "HTML");
     }
 
     // Cascade delete user and all related data (bots, channels, templates, deployments, configs)

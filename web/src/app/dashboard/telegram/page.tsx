@@ -35,9 +35,16 @@ interface PresetItem {
   badgeKey: string;
   icon: typeof ShoppingBag;
   templates: {
-    MarkdownV2: string;
-    HTML: string;
-    "": string;
+    en: {
+      MarkdownV2: string;
+      HTML: string;
+      "": string;
+    };
+    fa: {
+      MarkdownV2: string;
+      HTML: string;
+      "": string;
+    };
   };
 }
 
@@ -48,7 +55,8 @@ const PRESET_TEMPLATES: Record<PresetKey, PresetItem> = {
     badgeKey: "telegram.presetOrderBadge",
     icon: ShoppingBag,
     templates: {
-      MarkdownV2: `*🚨 NEW ORDER NOTIFICATION 🚨*
+      en: {
+        MarkdownV2: `*🚨 NEW ORDER NOTIFICATION 🚨*
 ━━━━━━━━━━━━━━━━━━━━━
 📦 *Event:* \`order\\.created\`
 🆔 *Order ID:* \`\\#ORD\\-98421\`
@@ -90,7 +98,7 @@ const PRESET_TEMPLATES: Record<PresetKey, PresetItem> = {
 \`\`\`
 🌐 [Open Order in Management Panel](https://example.com/orders/98421)`,
 
-      HTML: `<b>🚨 NEW ORDER NOTIFICATION 🚨</b>
+        HTML: `<b>🚨 NEW ORDER NOTIFICATION 🚨</b>
 ━━━━━━━━━━━━━━━━━━━━━
 📦 <b>Event:</b> <code>order.created</code>
 🆔 <b>Order ID:</b> <code>#ORD-98421</code>
@@ -130,7 +138,7 @@ const PRESET_TEMPLATES: Record<PresetKey, PresetItem> = {
 }</code></pre>
 🌐 <a href="https://example.com/orders/98421">Open Order in Management Panel</a>`,
 
-      "": `🚨 NEW ORDER NOTIFICATION 🚨
+        "": `🚨 NEW ORDER NOTIFICATION 🚨
 ━━━━━━━━━━━━━━━━━━━━━
 Event: order.created
 Order ID: #ORD-98421
@@ -152,6 +160,113 @@ Object Payload (JSON):
   "status": "PAID"
 }
 Link: https://example.com/orders/98421`,
+      },
+      fa: {
+        MarkdownV2: `*🚨 اعلان ثبت سفارش جدید 🚨*
+━━━━━━━━━━━━━━━━━━━━━
+📦 *رویداد:* \`order\\.created\`
+🆔 *شناسه سفارش:* \`\\#ORD\\-98421\`
+👤 *مشتری:* \`علی رضایی\`
+💰 *مبلغ کل:* \`۱,۴۵۰,۰۰۰ ریال\`
+💳 *درگاه پرداخت:* \`زرین‌پال\`
+📊 *وضعیت:* *پرداخت شده* 🟢
+━━━━━━━━━━━━━━━━━━━━━
+📋 *داده‌های ساختاریافته \\(JSON\\):*
+\`\`\`json
+{
+  "event": "order.created",
+  "orderId": "ORD-98421",
+  "customer": {
+    "name": "Ali Rezaei",
+    "phone": "+989123456789",
+    "email": "customer@example.com"
+  },
+  "items": [
+    {
+      "sku": "PROD-101",
+      "name": "Cloudflare Pro Notify",
+      "quantity": 1,
+      "unitPrice": 1450000
+    }
+  ],
+  "payment": {
+    "gateway": "ZarinPal",
+    "trackingCode": "ZP-993821049",
+    "currency": "IRR",
+    "isSuccess": true
+  },
+  "metadata": {
+    "clientIp": "185.190.22.4",
+    "userAgent": "TelegramNotify/2.0"
+  },
+  "timestamp": "2026-11-18T11:45:00Z"
+}
+\`\`\`
+🌐 [مشاهده سفارش در پنل مدیریت](https://example.com/orders/98421)`,
+
+        HTML: `<b>🚨 اعلان ثبت سفارش جدید 🚨</b>
+━━━━━━━━━━━━━━━━━━━━━
+📦 <b>رویداد:</b> <code>order.created</code>
+🆔 <b>شناسه سفارش:</b> <code>#ORD-98421</code>
+👤 <b>مشتری:</b> <code>علی رضایی</code>
+💰 <b>مبلغ کل:</b> <code>۱,۴۵۰,۰۰۰ ریال</code>
+💳 <b>درگاه پرداخت:</b> <code>زرین‌پال</code>
+📊 <b>وضعیت:</b> <b>پرداخت شده</b> 🟢
+━━━━━━━━━━━━━━━━━━━━━
+📋 <b>داده‌های ساختاریافته (JSON):</b>
+<pre><code class="language-json">{
+  "event": "order.created",
+  "orderId": "ORD-98421",
+  "customer": {
+    "name": "Ali Rezaei",
+    "phone": "+989123456789",
+    "email": "customer@example.com"
+  },
+  "items": [
+    {
+      "sku": "PROD-101",
+      "name": "Cloudflare Pro Notify",
+      "quantity": 1,
+      "unitPrice": 1450000
+    }
+  ],
+  "payment": {
+    "gateway": "ZarinPal",
+    "trackingCode": "ZP-993821049",
+    "currency": "IRR",
+    "isSuccess": true
+  },
+  "metadata": {
+    "clientIp": "185.190.22.4",
+    "userAgent": "TelegramNotify/2.0"
+  },
+  "timestamp": "2026-11-18T11:45:00Z"
+}</code></pre>
+🌐 <a href="https://example.com/orders/98421">مشاهده سفارش در پنل مدیریت</a>`,
+
+        "": `🚨 اعلان ثبت سفارش جدید 🚨
+━━━━━━━━━━━━━━━━━━━━━
+رویداد: order.created
+شناسه سفارش: #ORD-98421
+مشتری: علی رضایی
+مبلغ کل: ۱,۴۵۰,۰۰۰ ریال
+درگاه پرداخت: زرین‌پال
+وضعیت: پرداخت شده 🟢
+━━━━━━━━━━━━━━━━━━━━━
+داده‌های ساختاریافته (JSON):
+{
+  "event": "order.created",
+  "orderId": "ORD-98421",
+  "customer": {
+    "name": "Ali Rezaei",
+    "phone": "+989123456789"
+  },
+  "amount": 1450000,
+  "currency": "IRR",
+  "status": "PAID"
+}
+لینک: https://example.com/orders/98421`,
+      },
     },
   },
 
@@ -161,7 +276,8 @@ Link: https://example.com/orders/98421`,
     badgeKey: "telegram.presetServerBadge",
     icon: Server,
     templates: {
-      MarkdownV2: `*⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️*
+      en: {
+        MarkdownV2: `*⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️*
 ━━━━━━━━━━━━━━━━━━━━━
 🖥️ *Host:* \`edge\\-worker\\-eu1\`
 📈 *Incident:* *High Memory & Spike Load*
@@ -188,7 +304,7 @@ Link: https://example.com/orders/98421`,
 \`\`\`
 🛠️ [Open Grafana Incident Dashboard](https://grafana.example.com/alerts/40491)`,
 
-      HTML: `<b>⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️</b>
+        HTML: `<b>⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️</b>
 ━━━━━━━━━━━━━━━━━━━━━
 🖥️ <b>Host:</b> <code>edge-worker-eu1</code>
 📈 <b>Incident:</b> <b>High Memory & Spike Load</b>
@@ -213,7 +329,7 @@ Link: https://example.com/orders/98421`,
 }</code></pre>
 🛠️ <a href="https://grafana.example.com/alerts/40491">Open Grafana Incident Dashboard</a>`,
 
-      "": `⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️
+        "": `⚠️ CRITICAL INFRASTRUCTURE ALERT ⚠️
 ━━━━━━━━━━━━━━━━━━━━━
 Host: edge-worker-eu1
 Incident: High Memory & Spike Load
@@ -232,6 +348,80 @@ Telemetry Object (JSON):
   "status": "CRITICAL"
 }
 Link: https://grafana.example.com/alerts/40491`,
+      },
+      fa: {
+        MarkdownV2: `*⚠️ هشدار بحرانی زیرساخت و سرور ⚠️*
+━━━━━━━━━━━━━━━━━━━━━
+🖥️ *سرور:* \`edge\\-worker\\-eu1\`
+📈 *رویداد:* *مصرف بالای حافظه و بار ترافیکی*
+⚡ *سطح اهمیت:* *بحرانی* 🔴
+⏱️ *پایداری:* \`99\\.98%\`
+━━━━━━━━━━━━━━━━━━━━━
+📋 *گزارش تله‌متری \\(JSON\\):*
+\`\`\`json
+{
+  "alertId": "ALT-40491",
+  "service": "api-gateway",
+  "host": "edge-worker-eu1",
+  "region": "eu-central",
+  "metrics": {
+    "cpuUsage": "84.2%",
+    "memoryUsage": "91.8%",
+    "requestRate": "1,420 req/s",
+    "errorRate": "0.4%"
+  },
+  "status": "CRITICAL",
+  "environment": "production",
+  "timestamp": "2026-11-18T11:45:00Z"
+}
+\`\`\`
+🛠️ [مشاهده داشبورد حوادث گریفانا](https://grafana.example.com/alerts/40491)`,
+
+        HTML: `<b>⚠️ هشدار بحرانی زیرساخت و سرور ⚠️</b>
+━━━━━━━━━━━━━━━━━━━━━
+🖥️ <b>سرور:</b> <code>edge-worker-eu1</code>
+📈 <b>رویداد:</b> <b>مصرف بالای حافظه و بار ترافیکی</b>
+⚡ <b>سطح اهمیت:</b> <b>بحرانی</b> 🔴
+⏱️ <b>پایداری:</b> <code>99.98%</code>
+━━━━━━━━━━━━━━━━━━━━━
+📋 <b>گزارش تله‌متری (JSON):</b>
+<pre><code class="language-json">{
+  "alertId": "ALT-40491",
+  "service": "api-gateway",
+  "host": "edge-worker-eu1",
+  "region": "eu-central",
+  "metrics": {
+    "cpuUsage": "84.2%",
+    "memoryUsage": "91.8%",
+    "requestRate": "1,420 req/s",
+    "errorRate": "0.4%"
+  },
+  "status": "CRITICAL",
+  "environment": "production",
+  "timestamp": "2026-11-18T11:45:00Z"
+}</code></pre>
+🛠️ <a href="https://grafana.example.com/alerts/40491">مشاهده داشبورد حوادث گریفانا</a>`,
+
+        "": `⚠️ هشدار بحرانی زیرساخت و سرور ⚠️
+━━━━━━━━━━━━━━━━━━━━━
+سرور: edge-worker-eu1
+رویداد: مصرف بالای حافظه و بار ترافیکی
+سطح اهمیت: بحرانی 🔴
+پایداری: 99.98%
+━━━━━━━━━━━━━━━━━━━━━
+گزارش تله‌متری (JSON):
+{
+  "alertId": "ALT-40491",
+  "service": "api-gateway",
+  "host": "edge-worker-eu1",
+  "metrics": {
+    "cpuUsage": "84.2%",
+    "memoryUsage": "91.8%"
+  },
+  "status": "CRITICAL"
+}
+لینک: https://grafana.example.com/alerts/40491`,
+      },
     },
   },
 
@@ -241,7 +431,8 @@ Link: https://grafana.example.com/alerts/40491`,
     badgeKey: "telegram.presetUserBadge",
     icon: UserCheck,
     templates: {
-      MarkdownV2: `*👤 NEW USER REGISTRATION*
+      en: {
+        MarkdownV2: `*👤 NEW USER REGISTRATION*
 ━━━━━━━━━━━━━━━━━━━━━
 📱 *Phone:* \`\\+989123456789\`
 🌍 *Country:* \`Iran \\(IR\\)\`
@@ -267,7 +458,7 @@ Link: https://grafana.example.com/alerts/40491`,
 \`\`\`
 👥 [View User Profile in Admin](https://example.com/users/usr_99120485)`,
 
-      HTML: `<b>👤 NEW USER REGISTRATION</b>
+        HTML: `<b>👤 NEW USER REGISTRATION</b>
 ━━━━━━━━━━━━━━━━━━━━━
 📱 <b>Phone:</b> <code>+989123456789</code>
 🌍 <b>Country:</b> <code>Iran (IR)</code>
@@ -291,7 +482,7 @@ Link: https://grafana.example.com/alerts/40491`,
 }</code></pre>
 👥 <a href="https://example.com/users/usr_99120485">View User Profile in Admin</a>`,
 
-      "": `👤 NEW USER REGISTRATION
+        "": `👤 NEW USER REGISTRATION
 ━━━━━━━━━━━━━━━━━━━━━
 Phone: +989123456789
 Country: Iran (IR)
@@ -306,13 +497,81 @@ User Object (JSON):
   "status": "ACTIVE"
 }
 Link: https://example.com/users/usr_99120485`,
+      },
+      fa: {
+        MarkdownV2: `*👤 ثبت‌نام کاربر جدید*
+━━━━━━━━━━━━━━━━━━━━━
+📱 *شماره موبایل:* \`\\+989123456789\`
+🌍 *کشور:* \`ایران \\(IR\\)\`
+🛡️ *شیوه احراز:* \`Argon2id \\+ JWT\`
+✅ *وضعیت:* *فعال* 🟢
+━━━━━━━━━━━━━━━━━━━━━
+📋 *مشخصات کاربر \\(JSON\\):*
+\`\`\`json
+{
+  "event": "user.registered",
+  "userId": "usr_99120485",
+  "phoneNumber": "+989123456789",
+  "role": "MEMBER",
+  "security": {
+    "argon2Hashed": true,
+    "jwtSigned": true,
+    "ipAddress": "5.200.14.88",
+    "device": "Desktop/Chrome"
+  },
+  "status": "ACTIVE",
+  "createdAt": "2026-11-18T11:45:00Z"
+}
+\`\`\`
+👥 [مشاهده پروفایل کاربر در پنل](https://example.com/users/usr_99120485)`,
+
+        HTML: `<b>👤 ثبت‌نام کاربر جدید</b>
+━━━━━━━━━━━━━━━━━━━━━
+📱 <b>شماره موبایل:</b> <code>+989123456789</code>
+🌍 <b>کشور:</b> <code>ایران (IR)</code>
+🛡️ <b>شیوه احراز:</b> <code>Argon2id + JWT</code>
+✅ <b>وضعیت:</b> <b>فعال</b> 🟢
+━━━━━━━━━━━━━━━━━━━━━
+📋 <b>مشخصات کاربر (JSON):</b>
+<pre><code class="language-json">{
+  "event": "user.registered",
+  "userId": "usr_99120485",
+  "phoneNumber": "+989123456789",
+  "role": "MEMBER",
+  "security": {
+    "argon2Hashed": true,
+    "jwtSigned": true,
+    "ipAddress": "5.200.14.88",
+    "device": "Desktop/Chrome"
+  },
+  "status": "ACTIVE",
+  "createdAt": "2026-11-18T11:45:00Z"
+}</code></pre>
+👥 <a href="https://example.com/users/usr_99120485">مشاهده پروفایل کاربر در پنل</a>`,
+
+        "": `👤 ثبت‌نام کاربر جدید
+━━━━━━━━━━━━━━━━━━━━━
+شماره موبایل: +989123456789
+کشور: ایران (IR)
+شیوه احراز: Argon2id + JWT
+وضعیت: فعال 🟢
+━━━━━━━━━━━━━━━━━━━━━
+مشخصات کاربر (JSON):
+{
+  "event": "user.registered",
+  "userId": "usr_99120485",
+  "phoneNumber": "+989123456789",
+  "status": "ACTIVE"
+}
+لینک: https://example.com/users/usr_99120485`,
+      },
     },
   },
 };
 
 export default function TelegramDashboardPage() {
   const { user, refreshUser } = useAuth();
-  const { t, isRtl } = useI18n();
+  const { t, isRtl, locale } = useI18n();
 
   // Add Bot state
   const [botToken, setBotToken] = useState("");
@@ -333,7 +592,7 @@ export default function TelegramDashboardPage() {
   const [testChatId, setTestChatId] = useState("");
   const [parseMode, setParseMode] = useState<"HTML" | "MarkdownV2" | "">("HTML");
   const [activePreset, setActivePreset] = useState<PresetKey>("order");
-  const [testText, setTestText] = useState(PRESET_TEMPLATES.order.templates.HTML);
+  const [testText, setTestText] = useState(PRESET_TEMPLATES.order.templates[locale === "fa" ? "fa" : "en"].HTML);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [testSuccess, setTestSuccess] = useState<string | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
@@ -373,19 +632,28 @@ export default function TelegramDashboardPage() {
   // Handle format change from select dropdown
   const handleParseModeChange = (newMode: "HTML" | "MarkdownV2" | "") => {
     setParseMode(newMode);
-    setTestText(PRESET_TEMPLATES[activePreset].templates[newMode]);
+    const lang = locale === "fa" ? "fa" : "en";
+    setTestText(PRESET_TEMPLATES[activePreset].templates[lang][newMode]);
   };
 
   // Handle preset switch from buttons
   const handleSelectPreset = (key: PresetKey) => {
     setActivePreset(key);
-    setTestText(PRESET_TEMPLATES[key].templates[parseMode]);
+    const lang = locale === "fa" ? "fa" : "en";
+    setTestText(PRESET_TEMPLATES[key].templates[lang][parseMode]);
   };
 
   // Reset or reload current template preset
   const handleResetTemplate = () => {
-    setTestText(PRESET_TEMPLATES[activePreset].templates[parseMode]);
+    const lang = locale === "fa" ? "fa" : "en";
+    setTestText(PRESET_TEMPLATES[activePreset].templates[lang][parseMode]);
   };
+
+  // Update preset message when language changes
+  useEffect(() => {
+    const lang = locale === "fa" ? "fa" : "en";
+    setTestText(PRESET_TEMPLATES[activePreset].templates[lang][parseMode]);
+  }, [locale]);
 
   // Copy payload text to clipboard
   const handleCopyText = async () => {
