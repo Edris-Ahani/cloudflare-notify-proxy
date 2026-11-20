@@ -125,6 +125,15 @@ export class AuthService {
             createdAt: true,
           },
         },
+        googleConfig: {
+          select: {
+            id: true,
+            clientId: true,
+            authorizedRedirectUris: true,
+            status: true,
+            createdAt: true,
+          },
+        },
         telegramBots: {
           select: {
             id: true,

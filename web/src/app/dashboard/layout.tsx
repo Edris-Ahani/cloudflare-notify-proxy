@@ -14,6 +14,7 @@ import {
   LogOut,
   Phone,
   Loader2,
+  KeyRound,
 } from "lucide-react";
 
 export default function DashboardLayout({
@@ -48,6 +49,7 @@ export default function DashboardLayout({
     { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
     { name: t("nav.cloudflare"), href: "/dashboard/cloudflare", icon: Cloud },
     { name: t("nav.telegram"), href: "/dashboard/telegram", icon: Send },
+    { name: t("nav.google"), href: "/dashboard/google", icon: KeyRound },
     { name: t("nav.templates"), href: "/dashboard/templates", icon: FileText },
     { name: t("nav.docs"), href: "/dashboard/docs", icon: BookOpen },
   ];

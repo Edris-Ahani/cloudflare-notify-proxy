@@ -128,4 +128,16 @@ export const api = {
         body: JSON.stringify(body),
       }),
   },
+  google: {
+    saveConfig: (body: { clientId: string; clientSecret: string; authorizedRedirectUris?: string[] }) =>
+      fetchApi("/google/config", { method: "POST", body: JSON.stringify(body) }),
+    getConfig: () => fetchApi("/google/config", { method: "GET" }),
+    deleteConfig: () => fetchApi("/google/config", { method: "DELETE" }),
+    getAuthUrl: (params?: { redirectUri?: string; state?: string; scope?: string }) => {
+      const q = new URLSearchParams(params as Record<string, string>).toString();
+      return fetchApi(`/google/auth-url${q ? `?${q}` : ""}`, { method: "GET" });
+    },
+    exchangeToken: (body: { code: string; redirectUri: string; clientId?: string; clientSecret?: string }) =>
+      fetchApi("/google/exchange-token", { method: "POST", body: JSON.stringify(body) }),
+  },
 };

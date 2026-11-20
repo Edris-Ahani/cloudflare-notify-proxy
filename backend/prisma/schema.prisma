@@ -16,6 +16,7 @@ model User {
   updatedAt        DateTime           @updatedAt
   fallbackCallCount Int               @default(0)
   cloudflareConfig CloudflareConfig?
+  googleConfig     GoogleAuthConfig?
   telegramBots     TelegramBot[]
   templates        MessageTemplate[]
   deployments      WorkerDeployment[]
@@ -108,4 +109,20 @@ model TelegramOtpSession {
   @@index([phoneNumber])
   @@index([sessionToken])
   @@map("telegram_otp_sessions")
+}
+
+model GoogleAuthConfig {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId               String
+  clientSecretEncrypted  String
+  clientSecretIv         String
+  clientSecretTag        String
+  authorizedRedirectUris String[] @default([])
+  status                 String   @default("ACTIVE")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("google_auth_configs")
 }

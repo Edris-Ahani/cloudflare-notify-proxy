@@ -14,6 +14,12 @@ export interface User {
     accountId: string;
     status: string;
   } | null;
+  googleConfig?: {
+    id: string;
+    clientId: string;
+    authorizedRedirectUris?: string[];
+    status: string;
+  } | null;
   telegramBots?: Array<{
     id: string;
     botName: string;

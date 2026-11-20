@@ -20,6 +20,7 @@ import {
   FileCode,
   Sparkles,
   Server,
+  KeyRound,
 } from "lucide-react";
 
 export default function DocsPage() {
@@ -152,6 +153,22 @@ export default function DocsPage() {
   // Example F: Simple GET Webhook Ping
   const curlGet = `curl "${workerEndpoint}/send/telegram?text=Ping+from+Uptime+Robot" \\
   -H "Authorization: Bearer ${apiKey}"`;
+
+  // Example G: Google OAuth Authorization URL
+  const curlGoogleUrl = `curl -X GET "${workerEndpoint}/auth/google/url?redirect_uri=https://your-domain.com/callback"`;
+
+  // Example H: Google Token Exchange & Verified User Profile
+  const curlGoogleToken = `curl -X POST "${workerEndpoint}/auth/google/token" \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "code": "4/0AWtgzhExampleAuthCode...",
+    "redirect_uri": "https://your-domain.com/callback"
+  }'`;
+
+  // Example I: Google API Transparent Reverse Proxy (/google-proxy/)
+  const curlGoogleProxy = `curl -X GET "${workerEndpoint}/google-proxy/oauth2/v3/userinfo" \\
+  -H "Authorization: Bearer <GOOGLE_ACCESS_TOKEN>"`;
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -478,6 +495,111 @@ export default function DocsPage() {
           </div>
           <pre className="p-3.5 rounded-xl bg-slate-950 text-xs font-mono text-cyan-300 overflow-x-auto border border-slate-800/80 leading-relaxed">
             {curlGet}
+          </pre>
+        </div>
+
+        {/* Example 7: Google OAuth Authorization URL */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-200 flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-red-400" />
+              7. Google OAuth Login URL Generator (/auth/google/url)
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => downloadScript(`get_google_auth_url.sh`, curlGoogleUrl)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
+              >
+                <Download className="w-3 h-3 text-red-400" /> .sh
+              </button>
+              <button
+                onClick={() => copyCode(curlGoogleUrl, "curlGoogleUrl")}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
+              >
+                {copiedId === "curlGoogleUrl" ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+                Copy cURL
+              </button>
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Returns ready-to-redirect Google Consent URL with configured Client ID and permissions.
+          </p>
+          <pre className="p-3.5 rounded-xl bg-slate-950 text-xs font-mono text-red-300 overflow-x-auto border border-slate-800/80 leading-relaxed">
+            {curlGoogleUrl}
+          </pre>
+        </div>
+
+        {/* Example 8: Google Code-to-User Profile Exchange */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-200 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-emerald-400" />
+              8. Google Token Exchange & Verified User Profile (/auth/google/token)
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => downloadScript(`exchange_google_token.sh`, curlGoogleToken)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
+              >
+                <Download className="w-3 h-3 text-emerald-400" /> .sh
+              </button>
+              <button
+                onClick={() => copyCode(curlGoogleToken, "curlGoogleToken")}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
+              >
+                {copiedId === "curlGoogleToken" ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+                Copy cURL
+              </button>
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Exchanges authorization code for Google access/id tokens and returns verified profile (email, name, picture) without server IP sanctions.
+          </p>
+          <pre className="p-3.5 rounded-xl bg-slate-950 text-xs font-mono text-emerald-300 overflow-x-auto border border-slate-800/80 leading-relaxed">
+            {curlGoogleToken}
+          </pre>
+        </div>
+
+        {/* Example 9: Google API Transparent Proxy */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-200 flex items-center gap-2">
+              <Radio className="w-4 h-4 text-amber-400" />
+              9. Direct Google API Reverse Proxy (/google-proxy/)
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => downloadScript(`proxy_google_userinfo.sh`, curlGoogleProxy)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
+              >
+                <Download className="w-3 h-3 text-amber-400" /> .sh
+              </button>
+              <button
+                onClick={() => copyCode(curlGoogleProxy, "curlGoogleProxy")}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
+              >
+                {copiedId === "curlGoogleProxy" ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+                Copy cURL
+              </button>
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Transparently proxies raw Google API calls (oauth2, userinfo, etc.) through your Cloudflare Worker edge.
+          </p>
+          <pre className="p-3.5 rounded-xl bg-slate-950 text-xs font-mono text-amber-300 overflow-x-auto border border-slate-800/80 leading-relaxed">
+            {curlGoogleProxy}
           </pre>
         </div>
       </div>

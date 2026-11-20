@@ -48,13 +48,107 @@ export default {
     }
 
     // Google OAuth: start login / signup
-    if (request.method === "GET" && path === "/auth/google/start") {
+    if (request.method === "GET" && (path === "/auth/google/start" || path === "/auth/google/url" || path === "/google/auth-url")) {
+      const redirectUri = url.searchParams.get("redirect_uri");
+      const clientId = url.searchParams.get("client_id") || env.GOOGLE_CLIENT_ID;
+      const scope = url.searchParams.get("scope") || "openid email profile";
+      const state = url.searchParams.get("state");
+
+      if (path === "/auth/google/url" || path === "/google/auth-url") {
+        if (!clientId) {
+          return jsonResponse({ ok: false, error: "GOOGLE_CLIENT_ID missing" }, 400, headers);
+        }
+        if (!redirectUri) {
+          return jsonResponse({ ok: false, error: "redirect_uri required" }, 400, headers);
+        }
+        const params = new URLSearchParams({
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          response_type: "code",
+          scope,
+          access_type: "offline",
+          prompt: "consent",
+        });
+        if (state) params.append("state", state);
+        return jsonResponse({ ok: true, url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` }, 200, headers);
+      }
+
       return handleGoogleAuthStart(request, env, headers);
+    }
+
+    // Google OAuth: exchange token and fetch user profile
+    if (
+      request.method === "POST" &&
+      (path === "/auth/google/token" || path === "/auth/google/user" || path === "/google/exchange-token")
+    ) {
+      if (!verifyApiKey(request, env)) {
+        return unauthorizedResponse(headers);
+      }
+      const body = await request.json().catch(() => ({}));
+      const code = body.code || url.searchParams.get("code");
+      const redirectUri = body.redirect_uri || url.searchParams.get("redirect_uri");
+      const clientId = body.client_id || env.GOOGLE_CLIENT_ID;
+      const clientSecret = body.client_secret || env.GOOGLE_CLIENT_SECRET;
+
+      if (!code || !redirectUri || !clientId || !clientSecret) {
+        return jsonResponse({ ok: false, error: "Missing required parameters: code, redirect_uri, client_id, client_secret" }, 400, headers);
+      }
+
+      const tokenParams = new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      });
+
+      const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: tokenParams.toString(),
+      });
+      const tokenData = await tokenResp.json().catch(() => ({}));
+      if (!tokenResp.ok) {
+        return jsonResponse({ ok: false, error: tokenData.error_description || "Google token exchange failed" }, tokenResp.status, headers);
+      }
+
+      let userProfile = null;
+      if (tokenData.access_token) {
+        const userResp = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        });
+        userProfile = await userResp.json().catch(() => null);
+      }
+
+      return jsonResponse({ ok: true, user: userProfile, tokens: tokenData }, 200, headers);
     }
 
     // Google OAuth: callback from Google
     if (request.method === "GET" && path === "/auth/google/callback") {
       return handleGoogleAuthCallback(request, env, headers);
+    }
+
+    // Google API Reverse Proxy (/google-proxy/*)
+    if (path.startsWith("/google-proxy/")) {
+      if (!verifyApiKey(request, env)) {
+        return unauthorizedResponse(headers);
+      }
+      const subPath = path.replace("/google-proxy", "");
+      let targetBase = "https://www.googleapis.com";
+      if (subPath.startsWith("/token") || subPath.startsWith("/oauth2/token") || subPath.startsWith("/revoke")) {
+        targetBase = "https://oauth2.googleapis.com";
+      }
+      const targetUrl = `${targetBase}${subPath}${url.search}`;
+      const forwardHeaders = new Headers();
+      if (request.headers.get("content-type")) forwardHeaders.set("content-type", request.headers.get("content-type"));
+      if (request.headers.get("authorization")) forwardHeaders.set("authorization", request.headers.get("authorization"));
+
+      const init = { method: request.method, headers: forwardHeaders };
+      if (request.method !== "GET" && request.method !== "HEAD") init.body = await request.text();
+
+      const gResp = await fetch(targetUrl, init);
+      const gData = await gResp.json().catch(() => ({}));
+      return jsonResponse(gData, gResp.status, headers);
     }
 
     // Current user from Worker-issued JWT

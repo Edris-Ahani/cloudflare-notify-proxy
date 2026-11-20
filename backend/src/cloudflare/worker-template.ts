@@ -195,6 +195,179 @@ export default {
       return jsonResponse(result.body, result.status, headers);
     }
 
+    // -------------------------------------------------------------
+    // Google OAuth Edge Gateway Endpoints
+    // -------------------------------------------------------------
+
+    // 1. Generate Google Authorization URL
+    if (request.method === "GET" && (path === "/auth/google/url" || path === "/google/auth-url")) {
+      const redirectUri = url.searchParams.get("redirect_uri");
+      const clientId = url.searchParams.get("client_id") || env.GOOGLE_CLIENT_ID;
+      const scope = url.searchParams.get("scope") || "openid email profile";
+      const state = url.searchParams.get("state");
+      const prompt = url.searchParams.get("prompt") || "consent";
+      const accessType = url.searchParams.get("access_type") || "offline";
+
+      if (!clientId) {
+        return jsonResponse(
+          { ok: false, error: "GOOGLE_CLIENT_ID is not configured on this worker. Pass client_id query parameter." },
+          400,
+          headers
+        );
+      }
+
+      if (!redirectUri) {
+        return jsonResponse(
+          { ok: false, error: "redirect_uri query parameter is required" },
+          400,
+          headers
+        );
+      }
+
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: "code",
+        scope,
+        access_type: accessType,
+        prompt,
+      });
+
+      if (state) {
+        params.append("state", state);
+      }
+
+      const googleAuthUrl = "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString();
+
+      return jsonResponse(
+        {
+          ok: true,
+          url: googleAuthUrl,
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          scope,
+        },
+        200,
+        headers
+      );
+    }
+
+    // 2. Exchange Authorization Code for Tokens and User Profile
+    if (
+      request.method === "POST" &&
+      (path === "/auth/google/token" || path === "/auth/google/user" || path === "/google/exchange-token")
+    ) {
+      if (!verifyApiKey(request, env)) {
+        return jsonResponse({ ok: false, error: "Unauthorized: Invalid or missing Bearer token" }, 401, headers);
+      }
+
+      const body = await request.json().catch(() => ({}));
+      const code = body.code || url.searchParams.get("code");
+      const redirectUri = body.redirect_uri || url.searchParams.get("redirect_uri");
+      const clientId = body.client_id || env.GOOGLE_CLIENT_ID;
+      const clientSecret = body.client_secret || env.GOOGLE_CLIENT_SECRET;
+
+      if (!code || !redirectUri) {
+        return jsonResponse(
+          { ok: false, error: "code and redirect_uri parameters are required" },
+          400,
+          headers
+        );
+      }
+
+      if (!clientId || !clientSecret) {
+        return jsonResponse(
+          { ok: false, error: "Google OAuth credentials missing. Set GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET or pass in body." },
+          400,
+          headers
+        );
+      }
+
+      const tokenParams = new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      });
+
+      const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: tokenParams.toString(),
+      });
+
+      const tokenData = await tokenResp.json().catch(() => ({}));
+
+      if (!tokenResp.ok) {
+        return jsonResponse(
+          {
+            ok: false,
+            error: tokenData.error_description || tokenData.error || "Token exchange with Google failed",
+            details: tokenData,
+          },
+          tokenResp.status,
+          headers
+        );
+      }
+
+      // Fetch user profile using access token
+      let userProfile = null;
+      if (tokenData.access_token) {
+        const userResp = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: "Bearer " + tokenData.access_token },
+        });
+        userProfile = await userResp.json().catch(() => null);
+      }
+
+      return jsonResponse(
+        {
+          ok: true,
+          user: userProfile,
+          tokens: tokenData,
+        },
+        200,
+        headers
+      );
+    }
+
+    // 3. Transparent Reverse Proxy for Google APIs (/google-proxy/*)
+    if (path.startsWith("/google-proxy/")) {
+      if (!verifyApiKey(request, env)) {
+        return jsonResponse({ ok: false, error: "Unauthorized: Invalid or missing Bearer token" }, 401, headers);
+      }
+
+      const subPath = path.replace("/google-proxy", "");
+      let targetBase = "https://www.googleapis.com";
+      if (subPath.startsWith("/token") || subPath.startsWith("/oauth2/token") || subPath.startsWith("/revoke")) {
+        targetBase = "https://oauth2.googleapis.com";
+      }
+
+      const targetUrl = targetBase + subPath + url.search;
+
+      const forwardHeaders = new Headers();
+      if (request.headers.get("content-type")) {
+        forwardHeaders.set("content-type", request.headers.get("content-type"));
+      }
+      if (request.headers.get("authorization")) {
+        forwardHeaders.set("authorization", request.headers.get("authorization"));
+      }
+
+      const init = {
+        method: request.method,
+        headers: forwardHeaders,
+      };
+
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        init.body = await request.text();
+      }
+
+      const googleResp = await fetch(targetUrl, init);
+      const googleData = await googleResp.json().catch(() => ({}));
+
+      return jsonResponse(googleData, googleResp.status, headers);
+    }
+
     return new Response("Not Found", { status: 404, headers });
   },
 };

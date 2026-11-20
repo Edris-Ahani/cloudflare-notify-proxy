@@ -6,6 +6,7 @@ import { AuthModule } from "./auth/auth.module";
 import { CloudflareModule } from "./cloudflare/cloudflare.module";
 import { TelegramModule } from "./telegram/telegram.module";
 import { TemplateModule } from "./template/template.module";
+import { GoogleModule } from "./google/google.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { TemplateModule } from "./template/template.module";
     CloudflareModule,
     TelegramModule,
     TemplateModule,
+    GoogleModule,
   ],
 })
 export class AppModule {}

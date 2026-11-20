@@ -149,6 +149,20 @@ export class CloudflareService {
     await this.setWorkerSecret(cfConfig.accountId, apiToken, scriptName, "TELEGRAM_BOT_TOKEN", telegramBotToken);
     await this.setWorkerSecret(cfConfig.accountId, apiToken, scriptName, "API_SECRET_KEY", apiSecretKey);
 
+    // Optional: Inject Google OAuth secrets if configured by user
+    const googleConfig = await this.prisma.googleAuthConfig.findUnique({
+      where: { userId },
+    });
+    if (googleConfig) {
+      const clientSecret = this.crypto.decrypt(
+        googleConfig.clientSecretEncrypted,
+        googleConfig.clientSecretIv,
+        googleConfig.clientSecretTag
+      );
+      await this.setWorkerSecret(cfConfig.accountId, apiToken, scriptName, "GOOGLE_CLIENT_ID", googleConfig.clientId);
+      await this.setWorkerSecret(cfConfig.accountId, apiToken, scriptName, "GOOGLE_CLIENT_SECRET", clientSecret);
+    }
+
     if (dto.defaultChatId) {
       await this.setWorkerSecret(
         cfConfig.accountId,
